@@ -5,6 +5,23 @@
 import osxphotos
 import sys
 
+def sortByDate(ps: list[osxphotos.PhotoInfo]):
+    """
+    This function returns a dictionary where the key is the
+    date, and the object is a list of PhotoInfos
+    """
+
+    calendarDict = {}
+    for photo in ps:
+        key = photo.date.strftime('%Y-%m-%d')
+
+        if key not in calendarDict:
+            calendarDict[key] = [photo]
+        else:
+            calendarDict[key].append(photo)
+
+    return calendarDict
+
 def extractGPStoCSV(ps: list[osxphotos.PhotoInfo]):
     with open('gps.csv', 'w') as outfile:
         outfile.write('lon,lat,x\n')
@@ -15,30 +32,34 @@ def extractGPStoCSV(ps: list[osxphotos.PhotoInfo]):
 
     print('Done writing to gps.csv')
 
-def generateCalendarStats(ps: list[osxphotos.PhotoInfo]):
+def generateCalendarStats(dated: dict):
     """
     Writes to a csv file where the first column is date, 
     and the second column is the number of photos taken
     on that date
     """
 
-    print('Reading all dates...')
-    calendar = {}
-    for p in ps:
-        key = p.date.strftime('%Y-%m-%d')
-        if key in calendar:
-            calendar[key] += 1
-        else:
-            calendar[key] = 1
-
-    print('Done reading')
-
     with open('heatmap.csv', 'w') as outfile:
-        outfile.write('date, num\n')
-        for key in sorted(calendar.keys()):
-            outfile.write(f'{key},{calendar[key]}\n')
+        outfile.write('date,num\n')
+        for key in sorted(dated.keys()):
+            outfile.write(f'{key},{len(dated[key])}\n')
 
     print('Done writing to heatmap.csv')
+
+    with open('best.csv', 'w') as outfile:
+        outfile.write('date,best_score,avg_score,filename\n')
+        for key in sorted(dated.keys()):
+            if dated[key]:
+                avg_score = sum([p.score.overall for p in dated[key]]) / len(dated[key])
+                max_score = 0
+                filename = ''
+                for p in dated[key]:
+                    if p.score.overall > max_score:
+                        max_score = p.score.overall
+                        filename = p.original_filename
+                outfile.write(f'{key},{max_score},{avg_score},{filename}\n')
+            else:
+                outfile.write(f'{key},0,0,\n')
 
 def main():
     if len(sys.argv) <= 1:
@@ -51,9 +72,12 @@ def main():
     pd = osxphotos.PhotosDB(libpath)
     ps = pd.photos()
 
+    # Sort by date
+    dated = sortByDate(ps)
+
     # Write stats
     # extractGPStoCSV(ps)
-    generateCalendarStats(ps)
+    generateCalendarStats(dated)
 
     # Todo use the dict like in calendar and sort PhotoInfo by days
 
