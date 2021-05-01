@@ -46,6 +46,7 @@ def generateCalendarStats(dated: dict):
 
     print('Done writing to heatmap.csv')
 
+def generateDayBestPhotoStats(dated: dict):
     with open('best.csv', 'w') as outfile:
         outfile.write('date,best_score,avg_score,filename\n')
         for key in sorted(dated.keys()):
@@ -60,6 +61,8 @@ def generateCalendarStats(dated: dict):
                 outfile.write(f'{key},{max_score},{avg_score},{filename}\n')
             else:
                 outfile.write(f'{key},0,0,\n')
+    
+    print('Done writing to best.csv')
 
 def main():
     if len(sys.argv) <= 1:
