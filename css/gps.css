@@ -15,9 +15,9 @@ body.working {
 	cursor: progress;
 }
 
-a:hover {
+/* a:hover {
   text-decoration: underline;
-}
+} */
 
 p {
   line-height: 22px;
