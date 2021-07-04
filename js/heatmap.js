@@ -10,7 +10,7 @@ $.ajax({
         var fdata = formatCSVData(data);
         console.log(fdata);
         // TODO:
-        createHeatMap(fdata, '2018', '2022');
+        createHeatMap(fdata, '2017', '2022');
     }
 });
 

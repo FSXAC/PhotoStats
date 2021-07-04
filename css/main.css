@@ -3,8 +3,15 @@
   }
   
   body {
-    font: 10px sans-serif;
+    font: 16px sans-serif;
     shape-rendering: crispEdges;
+  }
+
+  h1 { margin-bottom: 1em; margin-top: 1em;}
+
+  .results {
+    font-size: 10px;
+    margin-bottom: 100px;
   }
   
   .day {
