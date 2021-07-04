@@ -8,7 +8,7 @@ $.ajax({
     url: "heatmap.csv",
     success: function (data) {
         var fdata = formatCSVData(data);
-        console.log(fdata);
+        // console.log(fdata);
         // TODO:
         createHeatMap(fdata, '2017', '2022');
     }

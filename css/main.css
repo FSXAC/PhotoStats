@@ -5,6 +5,7 @@
   body {
     font: 16px sans-serif;
     shape-rendering: crispEdges;
+    padding-top: 50px;
   }
 
   h1 { margin-bottom: 1em; margin-top: 1em;}
