@@ -3,8 +3,9 @@
 		heatOptions = {
 			tileOpacity: 1,
 			heatOpacity: 1,
-			radius: 8,
-			blur: 5
+			radius: 10,
+			blur: 13,
+			maxZoom: 6.4
 		};
 
 	function status(message) {
@@ -137,7 +138,8 @@
 
 
 			var latlngs = getLocationDataFromCSV(data);
-			heat._latlngs = latlngs;
+			// heat._latlngs = latlngs;
+			heat.setLatLngs(latlngs);
 			heat.redraw();
 			stageThree(latlngs.length);
 		}
