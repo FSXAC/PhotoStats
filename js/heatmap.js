@@ -95,7 +95,7 @@ function formatData(data) {
 function createHeatMap(data, startYear, endYear) {
     var width = 900;
     var height = 110;
-    var dx = 35;
+    var dx = 18;
     var gridClass = 'js-date-grid day';
     var formatColor = d3.scaleQuantize().domain([0, data.maxCount]).range(d3.range(NUMBER_OF_COLORS).map((d) => `color${d}`));
 
@@ -116,7 +116,7 @@ function createHeatMap(data, startYear, endYear) {
 
     // Add year label.
     rect.append('text')
-        .attr('transform', `translate(-9,${CELL_SIZE * 3.5})rotate(-90)`)
+        .attr('transform', `translate(-8,${CELL_SIZE * 3.5})rotate(-90)`)
         .style('text-anchor', 'middle')
         .text((d) => d);
 
