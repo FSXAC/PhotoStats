@@ -23,14 +23,29 @@ def sortByDate(ps: list[osxphotos.PhotoInfo]):
     return calendarDict
 
 def extractGPStoCSV(ps: list[osxphotos.PhotoInfo]):
-    with open('gps.csv', 'w') as outfile:
-        outfile.write('lon,lat,x\n')
+    """
+    Outputs gps.csv which contains a list of all GPS coordinates and
+    a gps_coarse.csv which groups the photos to gps coordinates within
+    5 decimal places (1.1 m precision)
+    """
+    with open('gps.csv', 'w') as outfile, open('gps_coarse.csv', 'w') as outfile_coarse:
+        outfile.write('latitude,longitude,n\n')
+        outfile_coarse.write('latitude,longitude,n\n')
+        coarse_group = dict()
         for p in ps:
             loc = p.location
             if loc[0] is not None:
                 outfile.write(f'{loc[0]},{loc[1]},1\n')
+                coarse_key = f'{round(loc[0], 5)},{round(loc[1], 5)}'
+                if coarse_key in coarse_group:
+                    coarse_group[coarse_key] += 1
+                else:
+                    coarse_group[coarse_key] = 1
+        for coord, count in coarse_group.items():
+            outfile_coarse.write(f'{coord},{count}\n')
 
     print('Done writing to gps.csv')
+    print('Done writing to gps_coarse.csv')
 
 def generateCalendarStats(dated: dict):
     """
@@ -79,8 +94,9 @@ def main():
     dated = sortByDate(ps)
 
     # Write stats
-    # extractGPStoCSV(ps)
+    extractGPStoCSV(ps)
     generateCalendarStats(dated)
+    generateDayBestPhotoStats(dated)
 
     # Todo use the dict like in calendar and sort PhotoInfo by days
 
