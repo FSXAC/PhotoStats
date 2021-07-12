@@ -173,7 +173,7 @@
 		for (var i = 1; i < lines.length; i++) {
 			var entry = lines[i].split(',');
 			if (entry.length >= 2) {
-				var newloc = [Number(entry[1]), Number(entry[0])];
+				var newloc = [Number(entry[0]), Number(entry[1])];
 				locations.push(newloc);
 			}
 		}
