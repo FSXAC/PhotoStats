@@ -3,6 +3,7 @@
 # Read the apple photos library and write GPS as csv
 
 import osxphotos
+from pathlib import Path
 import sys
 
 def sortByDate(ps: list[osxphotos.PhotoInfo]):
@@ -47,19 +48,19 @@ def extractGPStoCSV(ps: list[osxphotos.PhotoInfo]):
     print('Done writing to gps.csv')
     print('Done writing to gps_coarse.csv')
 
-def generateCalendarStats(dated: dict):
+def generateCalendarStats(dated: dict, file = 'heatmap.csv', verbose=True):
     """
     Writes to a csv file where the first column is date, 
     and the second column is the number of photos taken
     on that date
     """
 
-    with open('heatmap.csv', 'w') as outfile:
+    with open(file, 'w') as outfile:
         outfile.write('date,num\n')
         for key in sorted(dated.keys()):
             outfile.write(f'{key},{len(dated[key])}\n')
 
-    print('Done writing to heatmap.csv')
+    if verbose: print('Done writing to heatmap.csv')
 
 def generateDayBestPhotoStats(dated: dict):
     with open('best.csv', 'w') as outfile:
@@ -79,6 +80,34 @@ def generateDayBestPhotoStats(dated: dict):
     
     print('Done writing to best.csv')
 
+def exportByName(ps: list[osxphotos.PhotoInfo]):
+
+    # first we should have a dict of lists
+    named = dict()
+    
+    print('Going through people in photos')
+    for photo in ps:
+        names = photo.persons
+        if len(names) > 0:
+            for n in names:
+                if n.startswith('_'):
+                    continue
+
+                if n in named:
+                    named[n].append(photo)
+                else:
+                    named[n] = [photo]
+
+    if not len(named):
+        return
+
+    Path("people").mkdir(parents=True, exist_ok=True)
+    for name, photos in named.items():
+        sortedphotos = sortByDate(photos)
+        generateCalendarStats(sortedphotos, f'people/{name}.csv', False)
+
+    print(f'Done exporting for {len(named)} people.')
+
 def main():
     if len(sys.argv) <= 1:
         print('Please enter the path to the .photoslibrary as an argument')
@@ -94,16 +123,16 @@ def main():
     dated = sortByDate(ps)
 
     # Write stats
-    extractGPStoCSV(ps)
+    # extractGPStoCSV(ps)
     generateCalendarStats(dated)
-    generateDayBestPhotoStats(dated)
+    # generateDayBestPhotoStats(dated)
 
     # Todo use the dict like in calendar and sort PhotoInfo by days
 
     # Todo generate top pictures of the year by looking at their ScoreInfo
 
     # Todo like heatmap, but also assign the max ScoreInfo.overall to each day
-
+    exportByName(ps)
 
 if __name__ == '__main__':
     main()
