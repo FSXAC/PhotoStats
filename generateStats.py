@@ -4,7 +4,9 @@
 
 import osxphotos
 from pathlib import Path
+from datetime import datetime, timedelta
 import sys
+import json
 
 def sortByDate(ps: list[osxphotos.PhotoInfo]):
     """
@@ -80,8 +82,10 @@ def generateDayBestPhotoStats(dated: dict):
     
     print('Done writing to best.csv')
 
-def exportByName(ps: list[osxphotos.PhotoInfo]):
 
+# This sorts the photos (with tagged faces) into a dictionary of dictionaries:
+# {name1: { date1: [photos], date2: [photos]}, name2: ... }
+def sortByNameAndDate(ps: list[osxphotos.PhotoInfo]):
     # first we should have a dict of lists
     named = dict()
     
@@ -93,20 +97,74 @@ def exportByName(ps: list[osxphotos.PhotoInfo]):
                 if n.startswith('_'):
                     continue
 
+                datekey = photo.date.strftime('%Y-%m-%d')
                 if n in named:
-                    named[n].append(photo)
+                    if datekey in named[n]:
+                        named[n][datekey].append(photo)
+                    else:
+                        named[n][datekey] = [photo]
                 else:
-                    named[n] = [photo]
+                    named[n] = {datekey : [photo]}
+    return named
 
-    if not len(named):
-        return
+def exportNamedHeatmap(named: dict, setmindate = None, skipZeroDays=False):
 
-    Path("people").mkdir(parents=True, exist_ok=True)
-    for name, photos in named.items():
-        sortedphotos = sortByDate(photos)
-        generateCalendarStats(sortedphotos, f'people/{name}.csv', False)
+    # Generate name-index map and write to file
+    names = sorted(named.keys())
+    with open('people_index.csv', 'w') as outfile:
+        outfile.write('index,name\n')
+        for idx, name in enumerate(names):
+            outfile.write(f'{idx},{name}\n')
 
-    print(f'Done exporting for {len(named)} people.')
+    # Combine all dates
+    dates = set()
+    for _, ps in named.items():
+        dates |= set(ps.keys())
+
+    dates = sorted(dates)
+    if setmindate:
+        mindate = setmindate
+    else:
+        mindate = dates[0]
+    maxdate = dates[-1]
+
+    alldates = dict()
+    if skipZeroDays:
+        for d in dates:
+            alldates[d] = {}
+    else:
+        start = datetime.strptime(mindate, '%Y-%m-%d')
+        end = datetime.strptime(maxdate, '%Y-%m-%d')
+        delta = timedelta(days=1)
+
+        # Set up a dict with all the days
+        while start <= end:
+            alldates[start.strftime('%Y-%m-%d')] = {}
+            start += delta
+
+    print(f'mindate: {mindate}, maxdate: {maxdate}, number of days in between: {len(alldates.keys())}')
+
+    # Populate the alldates dict
+    for name, dated in named.items():
+        # find name index
+        index = names.index(name)
+        for datekey, photos in dated.items():
+            try:
+                alldates[datekey][index] = len(photos)
+            except KeyError:
+                continue
+    
+    # write to file (2d csv)
+    with open('people_data.csv', 'w') as f:
+
+        # Write headers
+        f.write(f'date,{",".join([str(i) for i in range(len(names))])}\n')
+
+        # Write data
+        for key in sorted(alldates.keys()):
+            day_data = alldates[key]
+            out_people_data = ['0' if i not in day_data else str(day_data[i]) for i in range(len(names))]
+            f.write(f'{key},{",".join(out_people_data)}\n')
 
 def main():
     if len(sys.argv) <= 1:
@@ -124,7 +182,7 @@ def main():
 
     # Write stats
     # extractGPStoCSV(ps)
-    generateCalendarStats(dated)
+    # generateCalendarStats(dated)
     # generateDayBestPhotoStats(dated)
 
     # Todo use the dict like in calendar and sort PhotoInfo by days
@@ -132,7 +190,12 @@ def main():
     # Todo generate top pictures of the year by looking at their ScoreInfo
 
     # Todo like heatmap, but also assign the max ScoreInfo.overall to each day
-    exportByName(ps)
+
+    # ---
+
+    exportNamedHeatmap(sortByNameAndDate(ps), '2020-01-01', False)
+
+
 
 if __name__ == '__main__':
     main()

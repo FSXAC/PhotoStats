@@ -3,3 +3,7 @@ best.csv
 # heatmap.csv
 gps_coarse.csv
 people/*
+people_*.csv
+peopleVisualizer/test.png
+peopleVisualizer/.DS_Store
+.DS_Store
