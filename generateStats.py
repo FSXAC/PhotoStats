@@ -193,7 +193,7 @@ def main():
 
     # ---
 
-    exportNamedHeatmap(sortByNameAndDate(ps), '2020-01-01', False)
+    exportNamedHeatmap(sortByNameAndDate(ps), '2018-01-01', False)
 
 
 

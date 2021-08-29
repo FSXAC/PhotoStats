@@ -3,8 +3,13 @@ final String PEOPLE_DATA_FILE = "../people_data.csv";
 final String PEOPLE_INDEX_FILE = "../people_index.csv";
 
 String[] people_names;
+// parallel list to keep track if drawn
+Boolean[] people_drawn;
+
 String[] date_names;
 int[][] people_data;
+
+PFont displayFont;
 
 void readPeopleIndex() {
     Table table = loadTable(PEOPLE_INDEX_FILE, "header");
@@ -89,40 +94,55 @@ PGraphics renderDataHD(int blockSize, float t, float scale) {
 
     PGraphics pg = createGraphics(gwidth + (2 * padding) + namespace, gheight + (2 * padding));
     pg.beginDraw();
+    pg.textFont(displayFont);
+
     pg.background(20);
+
+    // Draw rect
     pg.fill(0);
     pg.rect(padding + namespace, padding, gwidth, gheight);
     pg.noStroke();
 
-    pg.stroke(80);
+    // Draw vertical gridlines
+    final int horizontal_spacing = 21;
+    pg.stroke(20);
     pg.strokeWeight(1);
-    for (int day_idx = 0; day_idx < date_names.length; day_idx += 30) {
+    for (int day_idx = 0; day_idx < date_names.length; day_idx += horizontal_spacing) {
         float x = padding + namespace + day_idx * blockSize * scale;
         pg.line(x, padding, x, pg.height - padding);
     }
     pg.noStroke();
 
+    // Draw dates
     pg.textAlign(CENTER, BOTTOM);
-    pg.fill(150);
-    for (int day_idx = 0; day_idx < date_names.length; day_idx += 30) {
+    pg.fill(120);
+    String prevYear = "";
+    for (int day_idx = 0; day_idx < date_names.length; day_idx += horizontal_spacing) {
         float x = padding + namespace + day_idx * blockSize * scale;
-        pg.text(date_names[day_idx], x, padding - 0.5 * blockSize);
-    }
+        pg.text(date_names[day_idx].substring(5, 10), x, padding - 5);
 
-    pg.textAlign(RIGHT, CENTER);
-    for (int ppl_idx = 0; ppl_idx < people_names.length; ppl_idx++) {
-        float y = padding + ppl_idx * blockSize + 0.5 * blockSize;
-        pg.fill(rainbowize(ppl_idx));
-        pg.text(people_names[ppl_idx], padding + namespace - blockSize, y);
-
-        if (ppl_idx % 8 == 0) {
-            pg.stroke(30);
-            pg.line(padding + namespace, y, gwidth + padding + namespace, y);
-            pg.noStroke();
+        String year = date_names[day_idx].substring(0, 4);
+        if (prevYear.equals(year) == false) {
+            pg.textSize(20);
+            pg.fill(200);
+            pg.text(year, x, padding - blockSize);
+            pg.textSize(14);
+            pg.fill(120);
+            prevYear = year;
         }
     }
 
+    // Draw horizontal lines
+    final int vertical_spacing = 4;
+    pg.stroke(20);
+    for (int ppl_idx = 0; ppl_idx < people_names.length; ppl_idx += vertical_spacing) {
+        float y = padding + ppl_idx * blockSize + 0.5 * blockSize;
+        pg.line(padding + namespace, y, gwidth + padding + namespace, y);
+    }
+    pg.noStroke();
+
     // Draw dots
+    pg.blendMode(ADD);
     for (int day_idx = 0; day_idx < date_names.length; day_idx++) {
 
         float x = padding + namespace + day_idx * blockSize * scale;
@@ -130,17 +150,34 @@ PGraphics renderDataHD(int blockSize, float t, float scale) {
         for (int ppl_idx = 0; ppl_idx < people_names.length; ppl_idx++) {
             int val = people_data[day_idx][ppl_idx];
             if (val > 0) {
+                people_drawn[ppl_idx] = true;
+
                 // opacity
-                final float opacity = constrain(map(val, 0, t, 50, 100), 0, 255);
+                final float opacity = constrain(map(val, 0, t, 70, 150), 0, 255);
+                //float opacity = 200;
 
                 // size 
-                float r = constrain(map(val, 1, t, 3, blockSize), blockSize/2, blockSize);
+                //float r = constrain(map(val, 1, t, 3, blockSize), 3, 2 * blockSize);
+                //float r = blockSize;
+                float r = map(val, 1, t, 3, blockSize);
                 float y = padding + ppl_idx * blockSize;
 
-                pg.fill(rainbowize(ppl_idx), opacity);
-                pg.ellipse(x + blockSize / 2, y + blockSize / 2, r, r);
+                //pg.fill(rainbowize(ppl_idx), opacity);
+                //pg.ellipse(x + blockSize / 2, y + blockSize / 2, r, r);
+                pg.stroke(rainbowize(ppl_idx), opacity);
+                pg.strokeWeight(r);
+                pg.line(x - blockSize, y + blockSize / 2, x + blockSize, y + blockSize/2);
             }
         }
+    }
+    pg.blendMode(BLEND);
+
+    // draw names
+    pg.textAlign(RIGHT, CENTER);
+    for (int ppl_idx = 0; ppl_idx < people_names.length; ppl_idx++) {
+        float y = padding + ppl_idx * blockSize + 0.5 * blockSize;
+        pg.fill(rainbowize(ppl_idx), people_drawn[ppl_idx] ? 255 : 20);
+        pg.text(people_names[ppl_idx], padding + namespace - 0.5 * blockSize, y);
     }
 
     pg.endDraw();
@@ -156,13 +193,19 @@ void settings() {
 PGraphics pg;
 
 void setup() {
+    displayFont = createFont("Helvetica Neue", 14);
+
     readPeopleIndex();
     readPeopleData();
+    people_drawn = new Boolean[people_names.length];
+    for (int i = 0; i < people_names.length; i++) {
+        people_drawn[i] = false;
+    }
 
     // img = renderDataToImage(1, 1);
     // img.save("test.png");
 
-    pg = renderDataHD(20, 5, 0.2);
+    pg = renderDataHD(30, 5, 0.15);
     pg.save("test.png");
     exit();
 }
