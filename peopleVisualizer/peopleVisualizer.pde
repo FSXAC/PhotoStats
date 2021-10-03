@@ -3,8 +3,6 @@ final String PEOPLE_DATA_FILE = "../people_data.csv";
 final String PEOPLE_INDEX_FILE = "../people_index.csv";
 
 String[] people_names;
-// parallel list to keep track if drawn
-Boolean[] people_drawn;
 
 String[] date_names;
 int[][] people_data;
@@ -48,6 +46,51 @@ void readPeopleData() {
 
         index++;
     }
+
+    // Remove people who are not active in the date range
+    ArrayList ppl_idx_to_remove = new ArrayList();
+    for (int i = 0; i < people_names.length; i++) {
+        Boolean hasValues = false;
+
+        for (int j = 0; j < dateCount; j++) {
+            if (people_data[j][i] > 0) {
+                hasValues = true;
+                break;
+            }
+        }
+
+        if (!hasValues) {
+            ppl_idx_to_remove.add(i);
+        }
+    }
+
+    // Given a list of ids to remove, remove them from both
+    // people_names and people_data arrays
+    final int new_ppl_count = people_names.length - ppl_idx_to_remove.size();
+    String[] new_people_names = new String[new_ppl_count];
+    int[][] new_people_data = new int[dateCount][new_ppl_count];
+
+    int people_index = 0;
+    for (int i = 0; i < people_names.length; i++) {
+        if (ppl_idx_to_remove.contains(i)) {
+            continue;
+        }
+
+        // Copy name
+        new_people_names[people_index] = people_names[i];
+
+        // Copy data
+        for (int date_index = 0; date_index < dateCount; date_index++) {
+            new_people_data[date_index][people_index] = people_data[date_index][i];
+        }
+
+        // Next new index
+        people_index++;
+    }
+
+    // Replace
+    people_names = new_people_names.clone();
+    people_data = new_people_data.clone();
 }
 
 PImage renderDataToImage(int shrink, float t) {
@@ -158,8 +201,6 @@ PGraphics renderDataHD(int blockSize, float t, float scale) {
         for (int ppl_idx = 0; ppl_idx < people_names.length; ppl_idx++) {
             int val = people_data[day_idx][ppl_idx];
             if (val > 0) {
-                people_drawn[ppl_idx] = true;
-
                 if (visualization_type == VIS_PILL) {
                     // opacity
                     final float opacity = constrain(map(val, 0, t, 70, 150), 0, 255);
@@ -180,9 +221,9 @@ PGraphics renderDataHD(int blockSize, float t, float scale) {
                     final float opacity1 = 70;
                     final float opacity2 = constrain(map(val, 0, t, 70, 150), 0, 255);
                     final float y = padding + ppl_idx * blockSize;
-                    final float randRange = blockSize;
+                    final float randRange = 0.8 * blockSize;
                     final float randMultiplier = map(sqrt(val), 1, 10, 0, 1);
-                    final float size = 20.0;
+                    final float size = 16.0;
                     final float size2 = 4.0;
 
                     for (int v = 0; v < val; v++) {
@@ -206,7 +247,7 @@ PGraphics renderDataHD(int blockSize, float t, float scale) {
     pg.textAlign(RIGHT, CENTER);
     for (int ppl_idx = 0; ppl_idx < people_names.length; ppl_idx++) {
         float y = padding + ppl_idx * blockSize + 0.5 * blockSize;
-        pg.fill(rainbowize(ppl_idx), people_drawn[ppl_idx] ? 255 : 20);
+        pg.fill(rainbowize(ppl_idx));
         pg.text(people_names[ppl_idx], padding + namespace - 0.5 * blockSize, y);
     }
 
@@ -215,7 +256,7 @@ PGraphics renderDataHD(int blockSize, float t, float scale) {
 }
 
 void settings() {
-    size(1280, 800);
+    // size(1280, 800);
 }
 
 // PImage img;
@@ -227,10 +268,6 @@ void setup() {
 
     readPeopleIndex();
     readPeopleData();
-    people_drawn = new Boolean[people_names.length];
-    for (int i = 0; i < people_names.length; i++) {
-        people_drawn[i] = false;
-    }
 
     // img = renderDataToImage(1, 1);
     // img.save("test.png");
