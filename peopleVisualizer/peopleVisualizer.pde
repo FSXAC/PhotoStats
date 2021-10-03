@@ -11,6 +11,12 @@ int[][] people_data;
 
 PFont displayFont;
 
+// Visualization type
+final int VIS_PILL = 1;
+final int VIS_DOTS = 2;
+
+final int visualization_type = VIS_DOTS;
+
 void readPeopleIndex() {
     Table table = loadTable(PEOPLE_INDEX_FILE, "header");
     people_names = new String[table.getRowCount()];
@@ -68,6 +74,7 @@ PImage renderDataToImage(int shrink, float t) {
     return img;
 }
 
+// TODO: support palettes
 color rainbowize(int x) {
     switch (x % 8) {
         case 0: return color(255, 0, 0);
@@ -133,7 +140,8 @@ PGraphics renderDataHD(int blockSize, float t, float scale) {
     }
 
     // Draw horizontal lines
-    final int vertical_spacing = 4;
+    // final int vertical_spacing = 4;
+    final int vertical_spacing = 1;
     pg.stroke(20);
     for (int ppl_idx = 0; ppl_idx < people_names.length; ppl_idx += vertical_spacing) {
         float y = padding + ppl_idx * blockSize + 0.5 * blockSize;
@@ -152,21 +160,43 @@ PGraphics renderDataHD(int blockSize, float t, float scale) {
             if (val > 0) {
                 people_drawn[ppl_idx] = true;
 
-                // opacity
-                final float opacity = constrain(map(val, 0, t, 70, 150), 0, 255);
-                //float opacity = 200;
+                if (visualization_type == VIS_PILL) {
+                    // opacity
+                    final float opacity = constrain(map(val, 0, t, 70, 150), 0, 255);
+                    //float opacity = 200;
 
-                // size 
-                //float r = constrain(map(val, 1, t, 3, blockSize), 3, 2 * blockSize);
-                //float r = blockSize;
-                float r = map(val, 1, t, 3, blockSize);
-                float y = padding + ppl_idx * blockSize;
+                    // size 
+                    //float r = constrain(map(val, 1, t, 3, blockSize), 3, 2 * blockSize);
+                    //float r = blockSize;
+                    float r = map(val, 1, t, 3, blockSize);
+                    float y = padding + ppl_idx * blockSize;
 
-                //pg.fill(rainbowize(ppl_idx), opacity);
-                //pg.ellipse(x + blockSize / 2, y + blockSize / 2, r, r);
-                pg.stroke(rainbowize(ppl_idx), opacity);
-                pg.strokeWeight(r);
-                pg.line(x - blockSize, y + blockSize / 2, x + blockSize, y + blockSize/2);
+                    //pg.fill(rainbowize(ppl_idx), opacity);
+                    //pg.ellipse(x + blockSize / 2, y + blockSize / 2, r, r);
+                    pg.stroke(rainbowize(ppl_idx), opacity);
+                    pg.strokeWeight(r);
+                    pg.line(x - blockSize, y + blockSize / 2, x + blockSize, y + blockSize/2);
+                } else if (visualization_type == VIS_DOTS) {
+                    final float opacity1 = 70;
+                    final float opacity2 = constrain(map(val, 0, t, 70, 150), 0, 255);
+                    final float y = padding + ppl_idx * blockSize;
+                    final float randRange = blockSize;
+                    final float randMultiplier = map(sqrt(val), 1, 10, 0, 1);
+                    final float size = 20.0;
+                    final float size2 = 4.0;
+
+                    for (int v = 0; v < val; v++) {
+                        pg.noStroke();
+                        pg.fill(rainbowize(ppl_idx), opacity1);
+
+                        float dx = x + random(-randRange, randRange);
+                        float dy = y + blockSize / 2 + random(-randRange, randRange) * randMultiplier;
+                        pg.ellipse(dx, dy, size, size);
+
+                        pg.fill(255, opacity2);
+                        pg.ellipse(dx, dy, size2, size2);
+                    }
+                }
             }
         }
     }
