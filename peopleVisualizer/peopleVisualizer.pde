@@ -15,6 +15,25 @@ final int VIS_DOTS = 2;
 
 final int visualization_type = VIS_DOTS;
 
+// Palettes
+final int[] PALETTE_RAINBOW = {
+    color(255, 0, 0),
+    color(255, 180, 0),
+    color(255, 255, 0),
+    color(0, 255, 0),
+    color(0, 255, 255),
+    color(0, 80, 255),
+    color(90, 0, 255),
+    color(255, 0, 255)
+};
+
+final int[] PALETTE_PASTEL = {
+    #9b5de5, #f15bb5, #f8a07b, #fee440,
+    #7fd09d, #00bbf9, #00f5d4,
+};
+
+final int[] PALETTE_GREY = { #444444, #AAAAAA };
+
 void readPeopleIndex() {
     Table table = loadTable(PEOPLE_INDEX_FILE, "header");
     people_names = new String[table.getRowCount()];
@@ -119,18 +138,8 @@ PImage renderDataToImage(int shrink, float t) {
 
 // TODO: support palettes
 color rainbowize(int x) {
-    switch (x % 8) {
-        case 0: return color(255, 0, 0);
-        case 1: return color(255, 180, 0);
-        case 2: return color(255, 255, 0);
-        case 3: return color(0, 255, 0);
-        case 4: return color(0, 255, 255);
-        case 5: return color(0, 80, 255);
-        case 6: return color(90, 0, 255);
-        case 7: return color(255, 0, 255);
-    }
-    
-    return color(0, 0, 0);
+    final int i = x % PALETTE_RAINBOW.length;
+    return PALETTE_RAINBOW[i];
 }
 
 PGraphics renderDataHD(int blockSize, float t, float scale) {
@@ -146,7 +155,7 @@ PGraphics renderDataHD(int blockSize, float t, float scale) {
     pg.beginDraw();
     pg.textFont(displayFont);
 
-    pg.background(20);
+    pg.background(40);
 
     // Draw rect
     pg.fill(0);
@@ -155,7 +164,7 @@ PGraphics renderDataHD(int blockSize, float t, float scale) {
 
     // Draw vertical gridlines
     final int horizontal_spacing = 21;
-    pg.stroke(20);
+    pg.stroke(40);
     pg.strokeWeight(1);
     for (int day_idx = 0; day_idx < date_names.length; day_idx += horizontal_spacing) {
         float x = padding + namespace + day_idx * blockSize * scale;
@@ -185,7 +194,7 @@ PGraphics renderDataHD(int blockSize, float t, float scale) {
     // Draw horizontal lines
     // final int vertical_spacing = 4;
     final int vertical_spacing = 1;
-    pg.stroke(20);
+    pg.stroke(40);
     for (int ppl_idx = 0; ppl_idx < people_names.length; ppl_idx += vertical_spacing) {
         float y = padding + ppl_idx * blockSize + 0.5 * blockSize;
         pg.line(padding + namespace, y, gwidth + padding + namespace, y);
@@ -203,7 +212,7 @@ PGraphics renderDataHD(int blockSize, float t, float scale) {
             if (val > 0) {
                 if (visualization_type == VIS_PILL) {
                     // opacity
-                    final float opacity = constrain(map(val, 0, t, 70, 150), 0, 255);
+                    final float opacity = constrain(map(val, 0, t, 30, 100), 0, 100);
                     //float opacity = 200;
 
                     // size 
@@ -219,7 +228,7 @@ PGraphics renderDataHD(int blockSize, float t, float scale) {
                     pg.line(x - blockSize, y + blockSize / 2, x + blockSize, y + blockSize/2);
                 } else if (visualization_type == VIS_DOTS) {
                     final float opacity1 = 70;
-                    final float opacity2 = constrain(map(val, 0, t, 70, 150), 0, 255);
+                    final float opacity2 = constrain(map(val, 0, t, 70, 150), 0, 150);
                     final float y = padding + ppl_idx * blockSize;
                     final float randRange = 0.8 * blockSize;
                     final float randMultiplier = map(sqrt(val), 1, 10, 0, 1);
@@ -272,7 +281,7 @@ void setup() {
     // img = renderDataToImage(1, 1);
     // img.save("test.png");
 
-    pg = renderDataHD(30, 5, 0.15);
+    pg = renderDataHD(30, 5, 0.1);
     pg.save("test.png");
     exit();
 }
