@@ -181,9 +181,9 @@ def main():
     dated = sortByDate(ps)
 
     # Write stats
-    # extractGPStoCSV(ps)
-    # generateCalendarStats(dated)
-    # generateDayBestPhotoStats(dated)
+    extractGPStoCSV(ps)
+    generateCalendarStats(dated)
+    generateDayBestPhotoStats(dated)
 
     # Todo use the dict like in calendar and sort PhotoInfo by days
 
@@ -193,7 +193,7 @@ def main():
 
     # ---
 
-    exportNamedHeatmap(sortByNameAndDate(ps), '2019-08-01', False)
+    exportNamedHeatmap(sortByNameAndDate(ps), '2020-01-01', False)
 
 
 

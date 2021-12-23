@@ -6,11 +6,11 @@ const NUMBER_OF_COLORS = 6;
 $.ajax({
     type: "GET",
     url: "heatmap.csv",
-    success: function (data) {
+    success: function(data) {
         var fdata = formatCSVData(data);
         // console.log(fdata);
         // TODO:
-        createHeatMap(fdata, '2017', '2022');
+        createHeatMap(fdata, '2009', '2022');
     }
 });
 
@@ -27,7 +27,7 @@ function formatCSVData(allText) {
 
     for (var i = 1; i < allTextLines.length; i++) {
         var linedata = allTextLines[i].split(',');
-        
+
         var date = linedata[0];
         var count = parseInt(linedata[1]);
 
@@ -49,43 +49,6 @@ function formatCSVData(allText) {
     };
 }
 
-
-function formatData(data) {
-    var oldestDate = new Date();
-    var maxCount = 0;
-    var dateTable = {};
-
-    for (var key in data) {
-        var value = data[key];
-        if (!value || !value.length || !key) continue;
-
-        var lastDate = new Date(value[value.length - 1].created * 1000);
-        oldestDate = Math.min(oldestDate, lastDate);
-        value.forEach((entity) => {
-            var format = d3.timeFormat('%Y-%m-%d');
-            // Created is a date timestamp in seconds.
-            var date = format(new Date(entity.created * 1000));
-
-            if (dateTable[date]) {
-                var typeCount = dateTable[date][key];
-                dateTable[date][key] = typeCount ? typeCount + 1 : 1;
-                dateTable[date].count++;
-            } else {
-                dateTable[date] = { count: 1 };
-                dateTable[date][key] = 1;
-            }
-
-            maxCount = Math.max(maxCount, dateTable[date].count);
-        });
-    }
-
-    return {
-        startDate: new Date(oldestDate),
-        dates: dateTable,
-        maxCount
-    };
-}
-
 /**
  * Render the heatmap and any other svg elements
  * @param  {Object} data
@@ -97,7 +60,9 @@ function createHeatMap(data, startYear, endYear) {
     var height = 110;
     var dx = 18;
     var gridClass = 'js-date-grid day';
-    var formatColor = d3.scaleQuantize().domain([0, data.maxCount]).range(d3.range(NUMBER_OF_COLORS).map((d) => `color${d}`));
+    var formatColor = d3.scaleQuantize()
+        .domain([0, data.maxCount])
+        .range(d3.range(NUMBER_OF_COLORS).map((d) => `color${d}`));
 
     var heatmapSvg = d3.select('.js-heatmap').selectAll('svg.heatmap')
         .enter()
@@ -130,6 +95,7 @@ function createHeatMap(data, startYear, endYear) {
         .attr('height', CELL_SIZE)
         .attr('x', (d) => d3.timeFormat('%U')(d) * CELL_SIZE)
         .attr('y', (d) => d.getDay() * CELL_SIZE)
+        .attr('rx', 4)
         .attr('data-toggle', 'tooltip')
         .datum(d3.timeFormat('%Y-%m-%d'))
         // Add the grid data as a title attribute to render as a tooltip.

@@ -281,7 +281,7 @@ void setup() {
     // img = renderDataToImage(1, 1);
     // img.save("test.png");
 
-    pg = renderDataHD(30, 5, 0.1);
+    pg = renderDataHD(20, 5, 0.1);
     pg.save("test.png");
     exit();
 }
