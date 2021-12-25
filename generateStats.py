@@ -7,6 +7,58 @@ from pathlib import Path
 from datetime import datetime, timedelta
 import sys
 import json
+from functools import cmp_to_key
+
+# Score analysis attributes
+SCORE_ATTRIBUTES = [
+    'behavioral',
+    'curation',
+    'failure',
+    'harmonious_color',
+    'highlight_visibility',
+    'immersiveness',
+    'interaction',
+    'intresting_subject',
+    'intrusive_object_presence',
+    'lively_color',
+    'low_light',
+    'noise',
+    'overall',
+    'pleasant_camera_tilt',
+    'pleasant_composition',
+    'pleasant_lighting',
+    'pleasant_pattern',
+    'pleasant_perspective',
+    'pleasant_post_processing',
+    'pleasant_reflection',
+    'pleasant_symmetry',
+    'promotion',
+    'sharply_focused_subject',
+    'tastefully_blurred',
+    'well_chosen_subject',
+    'well_framed_subject',
+    'well_timed_shot',
+]
+
+def sortByScoreAttribute(
+    ps: list[osxphotos.PhotoInfo],
+    attr: str
+):
+    # Check that the attribute is valid
+    if attr not in SCORE_ATTRIBUTES:
+        print(f"Error: no attribute {attr}")
+        return None
+
+    # Sort a list of photos by the given attribute
+    def attrCompare(a: osxphotos.PhotoInfo, b: osxphotos.PhotoInfo):
+        nonlocal attr
+
+        a_score = getattr(a.score, attr)
+        b_score = getattr(b.score, attr)
+
+        return b > a
+
+    return sorted(ps, key=cmp_to_key(attrCompare))
 
 def sortByDate(ps: list[osxphotos.PhotoInfo]):
     """
@@ -179,6 +231,13 @@ def main():
 
     # Sort by date
     dated = sortByDate(ps)
+
+    # Debug
+    with open("testOut.json", 'w') as outfile:
+        for key, item in dated.items():
+            json.dump(item[0], outfile)
+            break
+    exit(1)
 
     # Write stats
     extractGPStoCSV(ps)
