@@ -7,3 +7,4 @@ people_*.csv
 peopleVisualizer/test.png
 peopleVisualizer/.DS_Store
 .DS_Store
+score_*.csv

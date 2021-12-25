@@ -18,7 +18,7 @@ SCORE_ATTRIBUTES = [
     'highlight_visibility',
     'immersiveness',
     'interaction',
-    'intresting_subject',
+    'interesting_subject',
     'intrusive_object_presence',
     'lively_color',
     'low_light',
@@ -49,16 +49,7 @@ def sortByScoreAttribute(
         print(f"Error: no attribute {attr}")
         return None
 
-    # Sort a list of photos by the given attribute
-    def attrCompare(a: osxphotos.PhotoInfo, b: osxphotos.PhotoInfo):
-        nonlocal attr
-
-        a_score = getattr(a.score, attr)
-        b_score = getattr(b.score, attr)
-
-        return b > a
-
-    return sorted(ps, key=cmp_to_key(attrCompare))
+    return sorted(ps, key=lambda photo: getattr(photo.score, attr))
 
 def sortByDate(ps: list[osxphotos.PhotoInfo]):
     """
@@ -218,6 +209,47 @@ def exportNamedHeatmap(named: dict, setmindate = None, skipZeroDays=False):
             out_people_data = ['0' if i not in day_data else str(day_data[i]) for i in range(len(names))]
             f.write(f'{key},{",".join(out_people_data)}\n')
 
+
+def exportScoreInfo(ps: list[osxphotos.PhotoInfo], attr: str, truncate=9,
+    filter_pics=False, filter_zero_values=False):
+    """
+    Use -1 for truncate to export the entire list and don't truncate the
+    sorted results
+    """
+    # Check that the attribute is valid
+    if attr not in SCORE_ATTRIBUTES:
+        print(f"Error: no attribute {attr}")
+        return None
+
+    sorted_ps = sortByScoreAttribute(ps=ps, attr=attr)
+
+    if (filter_pics):
+        video_ext = ['mov', 'mp4', 'avi', 'mpg']
+        sorted_ps = filter(
+            lambda photo: photo.original_filename.split('.')[-1].lower() not in video_ext,
+            sorted_ps)
+    
+    if (filter_zero_values):
+        sorted_ps = filter(lambda photo: getattr(photo.score, attr) != 0.0, sorted_ps)
+
+    with open(f'score_{attr}.csv', 'w') as outfile:
+        outfile.write('photo_file,score\n')
+
+        # Export without truncating
+        if 2 * truncate > len(sorted_ps) or truncate == -1:
+            out_ps = sorted_ps
+        else:
+            out_ps = sorted_ps[:truncate] + sorted_ps[len(sorted_ps) - truncate:]
+        
+        # Write to file
+        for p in out_ps:
+            outfile.write(f'{p.original_filename},{getattr(p.score, attr)}\n')
+
+def exportAllScoreInfo(ps: list[osxphotos.PhotoInfo], truncate: int, filter_pics: bool, filter_zero_values: bool):
+    for scoreAttr in SCORE_ATTRIBUTES:
+        print(f'Exporting sorted score attribute {scoreAttr}, truncate={truncate}')
+        exportScoreInfo(ps, scoreAttr, truncate)
+
 def main():
     if len(sys.argv) <= 1:
         print('Please enter the path to the .photoslibrary as an argument')
@@ -230,19 +262,13 @@ def main():
     ps = pd.photos()
 
     # Sort by date
-    dated = sortByDate(ps)
-
-    # Debug
-    with open("testOut.json", 'w') as outfile:
-        for key, item in dated.items():
-            json.dump(item[0], outfile)
-            break
-    exit(1)
+    # dated = sortByDate(ps)
 
     # Write stats
-    extractGPStoCSV(ps)
-    generateCalendarStats(dated)
-    generateDayBestPhotoStats(dated)
+    exportAllScoreInfo(ps, 16, True, True)
+    # extractGPStoCSV(ps)
+    # generateCalendarStats(dated)
+    # generateDayBestPhotoStats(dated)
 
     # Todo use the dict like in calendar and sort PhotoInfo by days
 
@@ -252,7 +278,7 @@ def main():
 
     # ---
 
-    exportNamedHeatmap(sortByNameAndDate(ps), '2020-01-01', False)
+    # exportNamedHeatmap(sortByNameAndDate(ps), '2020-01-01', False)
 
 
 
