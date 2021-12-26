@@ -8,37 +8,43 @@ from datetime import datetime, timedelta
 import sys
 import json
 from functools import cmp_to_key
+from enum import Enum
+
+class ScoreAttrType(Enum):
+    Min = 0     # If the score goes from -1.0 to 0.0
+    Max = 1     # If the score goes from 0.0 to 1.0
+    MinMax = 2  # If the score goes from -1.0 to 1.0
 
 # Score analysis attributes
-SCORE_ATTRIBUTES = [
-    'behavioral',
-    'curation',
-    'failure',
-    'harmonious_color',
-    'highlight_visibility',
-    'immersiveness',
-    'interaction',
-    'interesting_subject',
-    'intrusive_object_presence',
-    'lively_color',
-    'low_light',
-    'noise',
-    'overall',
-    'pleasant_camera_tilt',
-    'pleasant_composition',
-    'pleasant_lighting',
-    'pleasant_pattern',
-    'pleasant_perspective',
-    'pleasant_post_processing',
-    'pleasant_reflection',
-    'pleasant_symmetry',
-    'promotion',
-    'sharply_focused_subject',
-    'tastefully_blurred',
-    'well_chosen_subject',
-    'well_framed_subject',
-    'well_timed_shot',
-]
+SCORE_ATTRIBUTES = {
+    'behavioral': ScoreAttrType.Max,
+    'curation': ScoreAttrType.Max,
+    'failure': ScoreAttrType.Min,
+    'harmonious_color': ScoreAttrType.MinMax,
+    'highlight_visibility': ScoreAttrType.Max,
+    'immersiveness': ScoreAttrType.Max,
+    'interaction': ScoreAttrType.Max,
+    'interesting_subject': ScoreAttrType.MinMax,
+    'intrusive_object_presence': ScoreAttrType.Min,
+    'lively_color': ScoreAttrType.MinMax,
+    'low_light': ScoreAttrType.Max,
+    'noise': ScoreAttrType.Min,
+    'overall': ScoreAttrType.Max,
+    'pleasant_camera_tilt': ScoreAttrType.MinMax,
+    'pleasant_composition': ScoreAttrType.MinMax,
+    'pleasant_lighting': ScoreAttrType.MinMax,
+    'pleasant_pattern': ScoreAttrType.Max,
+    'pleasant_perspective': ScoreAttrType.MinMax,
+    'pleasant_post_processing': ScoreAttrType.MinMax,
+    'pleasant_reflection': ScoreAttrType.MinMax,
+    'pleasant_symmetry': ScoreAttrType.Max,
+    'promotion': ScoreAttrType.Max,
+    'sharply_focused_subject': ScoreAttrType.Max,
+    'tastefully_blurred': ScoreAttrType.MinMax,
+    'well_chosen_subject': ScoreAttrType.MinMax,
+    'well_framed_subject': ScoreAttrType.MinMax,
+    'well_timed_shot': ScoreAttrType.MinMax,
+}
 
 def sortByScoreAttribute(
     ps: list[osxphotos.PhotoInfo],
@@ -49,7 +55,7 @@ def sortByScoreAttribute(
         print(f"Error: no attribute {attr}")
         return None
 
-    return sorted(ps, key=lambda photo: getattr(photo.score, attr))
+    return sorted(ps, key=lambda photo: getattr(photo.score, attr), reverse=True)
 
 def sortByDate(ps: list[osxphotos.PhotoInfo]):
     """
@@ -209,9 +215,8 @@ def exportNamedHeatmap(named: dict, setmindate = None, skipZeroDays=False):
             out_people_data = ['0' if i not in day_data else str(day_data[i]) for i in range(len(names))]
             f.write(f'{key},{",".join(out_people_data)}\n')
 
-
-def exportScoreInfo(ps: list[osxphotos.PhotoInfo], attr: str, truncate=9,
-    filter_pics=False, filter_zero_values=False):
+def exportScoreInfo(ps: list[osxphotos.PhotoInfo], attr: str, truncate: int,
+    export_photos: bool, filter_pics: bool, filter_zero_values: bool):
     """
     Use -1 for truncate to export the entire list and don't truncate the
     sorted results
@@ -225,19 +230,31 @@ def exportScoreInfo(ps: list[osxphotos.PhotoInfo], attr: str, truncate=9,
 
     if (filter_pics):
         video_ext = ['mov', 'mp4', 'avi', 'mpg']
-        sorted_ps = filter(
+        sorted_ps = list(filter(
             lambda photo: photo.original_filename.split('.')[-1].lower() not in video_ext,
-            sorted_ps)
+            sorted_ps))
     
     if (filter_zero_values):
-        sorted_ps = filter(lambda photo: getattr(photo.score, attr) != 0.0, sorted_ps)
+        epsilon = 1e-2
+        sorted_ps = list(filter(lambda photo: getattr(photo.score, attr) > epsilon, sorted_ps))
 
-    with open(f'score_{attr}.csv', 'w') as outfile:
+    # Make directory
+    outdir = f'outdata/score_{attr}'
+    outdir_path = Path(outdir)
+    try:
+        outdir_path.rmdir()
+    except OSError as e:
+        pass
+    Path(outdir).mkdir(parents=True, exist_ok=True)
+
+    with open(f'{outdir}/data.csv', 'w') as outfile:
         outfile.write('photo_file,score\n')
 
         # Export without truncating
-        if 2 * truncate > len(sorted_ps) or truncate == -1:
-            out_ps = sorted_ps
+        if SCORE_ATTRIBUTES[attr] == ScoreAttrType.Max:
+            out_ps = sorted_ps[:truncate]
+        elif SCORE_ATTRIBUTES[attr] == ScoreAttrType.Min:
+            out_ps = sorted_ps[len(sorted_ps) - truncate:]
         else:
             out_ps = sorted_ps[:truncate] + sorted_ps[len(sorted_ps) - truncate:]
         
@@ -245,10 +262,20 @@ def exportScoreInfo(ps: list[osxphotos.PhotoInfo], attr: str, truncate=9,
         for p in out_ps:
             outfile.write(f'{p.original_filename},{getattr(p.score, attr)}\n')
 
-def exportAllScoreInfo(ps: list[osxphotos.PhotoInfo], truncate: int, filter_pics: bool, filter_zero_values: bool):
-    for scoreAttr in SCORE_ATTRIBUTES:
+        # Export photos
+        if export_photos:
+            if truncate != -1:
+                counter = 1
+                for p in out_ps:
+                    p.export(outdir, f'{counter}-{p.original_filename}', use_photos_export=True)
+                    counter += 1
+            else:
+                print('Photo libray too big, did not export')
+
+def exportAllScoreInfo(ps: list[osxphotos.PhotoInfo], truncate: int, export_photos: bool, filter_pics: bool, filter_zero_values: bool):
+    for scoreAttr in SCORE_ATTRIBUTES.keys():
         print(f'Exporting sorted score attribute {scoreAttr}, truncate={truncate}')
-        exportScoreInfo(ps, scoreAttr, truncate)
+        exportScoreInfo(ps, scoreAttr, truncate, export_photos, filter_pics, filter_zero_values)
 
 def main():
     if len(sys.argv) <= 1:
@@ -265,7 +292,12 @@ def main():
     # dated = sortByDate(ps)
 
     # Write stats
-    exportAllScoreInfo(ps, 16, True, True)
+    exportAllScoreInfo(
+        ps=ps,
+        truncate=16,
+        export_photos=True,
+        filter_pics=False,
+        filter_zero_values=False)
     # extractGPStoCSV(ps)
     # generateCalendarStats(dated)
     # generateDayBestPhotoStats(dated)

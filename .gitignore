@@ -8,3 +8,5 @@ peopleVisualizer/test.png
 peopleVisualizer/.DS_Store
 .DS_Store
 score_*.csv
+outdata/score_*/
+peopleVisualizer/*.png
