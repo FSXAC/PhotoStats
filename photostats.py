@@ -17,11 +17,13 @@ from export import *
 parser = argparse.ArgumentParser(description='PhotoStats by Muchen He -- '\
     'Using OSXPhotos and your macOS Photos library to generate visualizations')
 
+default_library_path = os.path.sep.join([os.environ['HOME'], 'Pictures', 'Photos Library.photoslibrary'])
 parser.add_argument('--library', help='Absolute path to the .photoslibrary \Photos Library',
-default=os.path.join(os.environ['HOME'], 'Photos Library.photoslibrary'))
+default=default_library_path)
 
 parser.add_argument('--outdir', help='Output directory for the exported data', default='outdata')
 parser.add_argument('--export', help='Specify what kind of data to export', choices=EXPORT_TYPES, default='all')
+parser.add_argument('--ignore-hidden', help='Ignore photos that are hidden (in the hidden album)', action='store_true')
 
 # Parse the arguments
 try:
@@ -41,10 +43,13 @@ def main():
     print(f"Opening photo library at {args.library}, this may take a while.")
 
     # TEMP
-    return
 
     pd = osxphotos.PhotosDB(args.library)
     ps = pd.photos()
+
+    # Filter hidden photos from the list of photos
+    if args.ignore_hidden:
+        ps = list(filter(lambda photo: not photo.hidden, ps))
 
     # Sort by date
     # dated = sortByDate(ps)

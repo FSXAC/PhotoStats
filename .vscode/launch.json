@@ -5,13 +5,12 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Debug GenerateStats",
+            "name": "PhotoStats",
             "type": "python",
             "request": "launch",
-            "program": "generateStats.py",
+            "program": "photostats.py",
             "console": "integratedTerminal",
             "args": [
-                "/Users/muchen/Pictures/Photos Library.photoslibrary"
             ],
         }
     ]
