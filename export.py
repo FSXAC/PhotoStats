@@ -1,9 +1,11 @@
+import os
 import osxphotos
 
 from datetime import datetime, timedelta
 from pathlib import Path
 
 from score import *
+from sort import *
 
 # Specify the type of exports
 EXPORT_TYPE_GPS_COORDS = 'gps'
@@ -19,30 +21,52 @@ EXPORT_TYPES = [
     'all'
 ]
 
-def extractGPStoCSV(ps: list[osxphotos.PhotoInfo]):
+def exportGPS(ps: list[osxphotos.PhotoInfo], outdir: str, precision=5):
     """
-    Outputs gps.csv which contains a list of all GPS coordinates and
-    a gps_coarse.csv which groups the photos to gps coordinates within
-    5 decimal places (1.1 m precision)
+    Exports gps.csv which contains a list of all GPS coordinates and
+    with a precision of 5-decimal places by default -- which is about
+    1.1 meters
     """
-    with open('gps.csv', 'w') as outfile, open('gps_coarse.csv', 'w') as outfile_coarse:
-        outfile.write('latitude,longitude,n\n')
-        outfile_coarse.write('latitude,longitude,n\n')
-        coarse_group = dict()
-        for p in ps:
-            loc = p.location
-            if loc[0] is not None:
-                outfile.write(f'{loc[0]},{loc[1]},1\n')
-                coarse_key = f'{round(loc[0], 5)},{round(loc[1], 5)}'
-                if coarse_key in coarse_group:
-                    coarse_group[coarse_key] += 1
-                else:
-                    coarse_group[coarse_key] = 1
-        for coord, count in coarse_group.items():
-            outfile_coarse.write(f'{coord},{count}\n')
 
-    print('Done writing to gps.csv')
-    print('Done writing to gps_coarse.csv')
+    outfile_path = os.path.join(outdir, 'gps.csv')
+    print(f'Exporting GPS data to {outfile_path} with {5} decimal places for coordinates precision')
+
+    with open(outfile_path, 'w') as outfile:
+        outfile.write('latitude,longitude,n\n')
+        grouping = dict()
+
+        for photo in ps:
+            photo_location = photo.location
+
+            # Ignore all photos that don't have location
+            # TODO: profile to see if "filter" the array beforehand is faster?
+            if photo_location[0] is not None:
+                grouping_key = f'{round(photo_location[0], precision)},{round(photo_location[1], precision)}'
+                if grouping_key in grouping:
+                    grouping[grouping_key] += 1
+                else:
+                    grouping[grouping_key] = 1
+
+        for coordinate, count in grouping:
+            outfile.write(f'{coordinate},{count}\n')
+    
+    print(f'Done writing GPS coordinates data')
+
+
+def generateCalendarStats(dated: dict, file='heatmap.csv', verbose=True):
+    """
+    Writes to a csv file where the first column is date, 
+    and the second column is the number of photos taken
+    on that date
+    """
+
+    with open(file, 'w') as outfile:
+        outfile.write('date,num\n')
+        for key in sorted(dated.keys()):
+            outfile.write(f'{key},{len(dated[key])}\n')
+
+    if verbose: print('Done writing to heatmap.csv')
+
 
 def exportNamedHeatmap(named: dict, setmindate = None, skipZeroDays=False):
 
@@ -164,20 +188,6 @@ def exportAllScoreInfo(ps: list[osxphotos.PhotoInfo], truncate: int, export_phot
     for scoreAttr in SCORE_ATTRIBUTES.keys():
         print(f'Exporting sorted score attribute {scoreAttr}, truncate={truncate}')
         exportScoreInfo(ps, scoreAttr, truncate, export_photos, filter_pics, filter_zero_values)
-
-def generateCalendarStats(dated: dict, file='heatmap.csv', verbose=True):
-    """
-    Writes to a csv file where the first column is date, 
-    and the second column is the number of photos taken
-    on that date
-    """
-
-    with open(file, 'w') as outfile:
-        outfile.write('date,num\n')
-        for key in sorted(dated.keys()):
-            outfile.write(f'{key},{len(dated[key])}\n')
-
-    if verbose: print('Done writing to heatmap.csv')
 
 def generateDayBestPhotoStats(dated: dict):
     with open('best.csv', 'w') as outfile:
