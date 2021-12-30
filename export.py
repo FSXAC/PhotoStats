@@ -21,7 +21,7 @@ EXPORT_TYPES = [
     'all'
 ]
 
-def exportGPS(ps: list[osxphotos.PhotoInfo], outdir: str, precision=5):
+def exportGPS(ps:list[osxphotos.PhotoInfo], outdir:str, precision:int=5):
     """
     Exports gps.csv which contains a list of all GPS coordinates and
     with a precision of 5-decimal places by default -- which is about
@@ -53,19 +53,21 @@ def exportGPS(ps: list[osxphotos.PhotoInfo], outdir: str, precision=5):
     print(f'Done writing GPS coordinates data')
 
 
-def generateCalendarStats(dated: dict, file='heatmap.csv', verbose=True):
+def exportCalendarHeatmap(ps_dated:dict[str,list[osxphotos.PhotoInfo]], outdir:str):
     """
-    Writes to a csv file where the first column is date, 
-    and the second column is the number of photos taken
-    on that date
+    Exports calendar_heatmap.csv where each row contains a data and number of
+    photos taken on that day, this csv file will be used in the web view
     """
 
-    with open(file, 'w') as outfile:
+    outfile_path = os.path.join(outdir, 'calendar_heatmap.csv')
+    print(f'Exporting calendar heatmap data to {outfile_path}')
+
+    with open(outfile_path, 'w') as outfile:
         outfile.write('date,num\n')
-        for key in sorted(dated.keys()):
-            outfile.write(f'{key},{len(dated[key])}\n')
+        for key in sorted(ps_dated.keys()):
+            outfile.write(f'{key},{len(ps_dated[key])}\n')
 
-    if verbose: print('Done writing to heatmap.csv')
+    print(f'Done writing calendar heatmap data')
 
 
 def exportNamedHeatmap(named: dict, setmindate = None, skipZeroDays=False):
