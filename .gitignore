@@ -10,3 +10,6 @@ peopleVisualizer/.DS_Store
 score_*.csv
 outdata/score_*/
 peopleVisualizer/*.png
+
+.DS_Store
+__pycache__/*

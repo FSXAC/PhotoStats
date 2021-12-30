@@ -2,26 +2,48 @@
 
 # Read the apple photos library and write GPS as csv
 
+import argparse
+from logging import error
+import os
 import osxphotos
-from pathlib import Path
 import sys
-import json
-from functools import cmp_to_key
 
 # Import our modules
 from score import *
 from sort import *
 from export import *
 
+# Set up arguments
+parser = argparse.ArgumentParser(description='PhotoStats by Muchen He -- '\
+    'Using OSXPhotos and your macOS Photos library to generate visualizations')
+
+parser.add_argument('--library', help='Absolute path to the .photoslibrary \Photos Library',
+default=os.path.join(os.environ['HOME'], 'Photos Library.photoslibrary'))
+
+parser.add_argument('--outdir', help='Output directory for the exported data', default='outdata')
+parser.add_argument('--export', help='Specify what kind of data to export', choices=EXPORT_TYPES, default='all')
+
+# Parse the arguments
+try:
+    args = parser.parse_args()
+except:
+    parser.print_help()
+    sys.exit(1)
+
 def main():
-    if len(sys.argv) <= 1:
-        print('Please enter the path to the .photoslibrary as an argument')
-        exit(1)
+    # Check the path is correct
+    if not os.path.exists(args.library):
+        parser.print_help()
+        print(f'Cannot open Photos library at {args.library}, please specify the absolute ' \
+            'path to the Photos library using the --library argument')
+        sys.exit(1)
 
-    libpath = sys.argv[1]
+    print(f"Opening photo library at {args.library}, this may take a while.")
 
-    print(f"Opening photo library at {libpath}, this may take a while.")
-    pd = osxphotos.PhotosDB(libpath)
+    # TEMP
+    return
+
+    pd = osxphotos.PhotosDB(args.library)
     ps = pd.photos()
 
     # Sort by date

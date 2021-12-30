@@ -5,6 +5,20 @@ from pathlib import Path
 
 from score import *
 
+# Specify the type of exports
+EXPORT_TYPE_GPS_COORDS = 'gps'
+EXPORT_TYPE_CALENDAR_HEATMAP = 'calendar'
+EXPORT_TYPE_CALENDAR_BEST = 'calendar_best'
+EXPORT_TYPE_PEOPLE = 'people'
+
+EXPORT_TYPES = [
+    EXPORT_TYPE_GPS_COORDS,
+    EXPORT_TYPE_CALENDAR_HEATMAP,
+    EXPORT_TYPE_CALENDAR_BEST,
+    EXPORT_TYPE_PEOPLE,
+    'all'
+]
+
 def extractGPStoCSV(ps: list[osxphotos.PhotoInfo]):
     """
     Outputs gps.csv which contains a list of all GPS coordinates and
@@ -29,7 +43,6 @@ def extractGPStoCSV(ps: list[osxphotos.PhotoInfo]):
 
     print('Done writing to gps.csv')
     print('Done writing to gps_coarse.csv')
-
 
 def exportNamedHeatmap(named: dict, setmindate = None, skipZeroDays=False):
 
