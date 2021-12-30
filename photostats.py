@@ -3,9 +3,10 @@
 # Read the apple photos library and write GPS as csv
 
 import argparse
-from logging import error
+import http.server
 import os
 import osxphotos
+import socketserver
 import sys
 
 # Import our modules
@@ -25,6 +26,7 @@ default=default_library_path)
 parser.add_argument('--outdir', help='Output directory for the exported data', default='outdata')
 parser.add_argument('--export', help='Specify what kind of data to export', choices=EXPORT_TYPES, default='all')
 parser.add_argument('--ignore-hidden', help='Ignore photos that are hidden (in the hidden album)', action='store_true')
+parser.add_argument('--serve', help='After exporting, serve the webpages using http.server', action='store_true')
 
 # Export-specific arguments
 parser.add_argument('--gps-precision', help='Precision of GPS coordinates in export', type=int, choices=range(2, 7), default=5)
@@ -57,6 +59,12 @@ def main():
 
     if args.export in ['all', EXPORT_TYPE_CALENDAR_HEATMAP]:
         exportCalendarHeatmap(ps_dated, args.outdir)
+
+    if args.serve:
+        with socketserver.TCPServer(('', 8000), http.server.SimpleHTTPRequestHandler) as httpd:
+            print('Serving at http://localhost:8000')
+            httpd.serve_forever()
+
 
     # Group by date
     # ps_dated = groupByDate(ps)
