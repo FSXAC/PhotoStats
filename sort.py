@@ -1,10 +1,7 @@
 import osxphotos
 from score import *
 
-def sortByScoreAttribute(
-    ps: list[osxphotos.PhotoInfo],
-    attr: str
-):
+def sortByScoreAttribute(ps:list[osxphotos.PhotoInfo], attr:str='overall'):
     """
     Sort a list of photos based on a score attibute
     and returns a sorted list
@@ -16,22 +13,22 @@ def sortByScoreAttribute(
 
     return sorted(ps, key=lambda photo: getattr(photo.score, attr), reverse=True)
 
-def sortByDate(ps: list[osxphotos.PhotoInfo]):
+def groupByDate(ps:list[osxphotos.PhotoInfo]):
     """
-    This function returns a dictionary where the key is the
-    date, and the object is a list of PhotoInfos
+    Groups photos by date and returns a dict where the key is the
+    date, and the object is a list of photos taken on that date
     """
 
-    calendarDict = {}
+    calendar_group = {}
     for photo in ps:
         key = photo.date.strftime('%Y-%m-%d')
 
-        if key not in calendarDict:
-            calendarDict[key] = [photo]
+        if key not in calendar_group:
+            calendar_group[key] = [photo]
         else:
-            calendarDict[key].append(photo)
+            calendar_group[key].append(photo)
 
-    return calendarDict
+    return calendar_group
 
 
 # This sorts the photos (with tagged faces) into a dictionary of dictionaries:

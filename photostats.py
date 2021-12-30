@@ -18,19 +18,19 @@ parser = argparse.ArgumentParser(description='PhotoStats by Muchen He -- '\
     'Using OSXPhotos and your macOS Photos library to generate visualizations')
 
 default_library_path = os.path.sep.join([os.environ['HOME'], 'Pictures', 'Photos Library.photoslibrary'])
-parser.add_argument('--library', help='Absolute path to the .photoslibrary \Photos Library',
+parser.add_argument('--library', help='Absolute path to the .photoslibrary Photos Library',
 default=default_library_path)
 
+# Optional arguments
 parser.add_argument('--outdir', help='Output directory for the exported data', default='outdata')
 parser.add_argument('--export', help='Specify what kind of data to export', choices=EXPORT_TYPES, default='all')
 parser.add_argument('--ignore-hidden', help='Ignore photos that are hidden (in the hidden album)', action='store_true')
 
+# Export-specific arguments
+parser.add_argument('--gps-precision', help='Precision of GPS coordinates in export', type=int, choices=range(2, 7), default=5)
+
 # Parse the arguments
-try:
-    args = parser.parse_args()
-except:
-    parser.print_help()
-    sys.exit(1)
+args = parser.parse_args()
 
 def main():
     # Check the path is correct
@@ -46,21 +46,28 @@ def main():
 
     pd = osxphotos.PhotosDB(args.library)
     ps = pd.photos()
+    ps_dated = groupByDate(ps)
 
     # Filter hidden photos from the list of photos
     if args.ignore_hidden:
         ps = list(filter(lambda photo: not photo.hidden, ps))
 
-    # Sort by date
-    # dated = sortByDate(ps)
+    if args.export in ['all', EXPORT_TYPE_GPS_COORDS]:
+        exportGPS(ps, args.outdir, args.gps_precision)
+
+    if args.export in ['all', EXPORT_TYPE_CALENDAR_HEATMAP]:
+        exportCalendarHeatmap(ps_dated, args.outdir)
+
+    # Group by date
+    # ps_dated = groupByDate(ps)
 
     # Write stats
-    exportAllScoreInfo(
-        ps=ps,
-        truncate=16,
-        export_photos=True,
-        filter_pics=False,
-        filter_zero_values=False)
+    # exportAllScoreInfo(
+    #     ps=ps,
+    #     truncate=16,
+    #     export_photos=True,
+    #     filter_pics=False,
+    #     filter_zero_values=False)
     # extractGPStoCSV(ps)
     # generateCalendarStats(dated)
     # generateDayBestPhotoStats(dated)

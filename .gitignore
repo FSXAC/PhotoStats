@@ -1,16 +1,11 @@
-gps.csv
-best.csv
-# heatmap.csv
-gps_coarse.csv
 people/*
 people_*.csv
 peopleVisualizer/test.png
 peopleVisualizer/.DS_Store
-.DS_Store
-score_*.csv
-outdata/score_*/
 peopleVisualizer/*.png
 
-.DS_Store
 __pycache__/*
+.DS_Store
 .vscode/*
+outdata/score_*/
+outdata/gps.csv

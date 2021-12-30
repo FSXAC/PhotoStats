@@ -47,7 +47,7 @@ def exportGPS(ps:list[osxphotos.PhotoInfo], outdir:str, precision:int=5):
                 else:
                     grouping[grouping_key] = 1
 
-        for coordinate, count in grouping:
+        for coordinate, count in grouping.items():
             outfile.write(f'{coordinate},{count}\n')
     
     print(f'Done writing GPS coordinates data')
