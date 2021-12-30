@@ -1,110 +1,128 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>Location History Visualizer | Heatmap</title>
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
     <meta name="description" content="Visualize GPS coordinates in browser.">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
-    <link rel="stylesheet" href="css/main.css"/>
-    <link rel="stylesheet" href="css/gps.css"/>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.3/leaflet.css"/>
-    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <link rel="stylesheet" href="css/main.css" />
+    <link rel="stylesheet" href="css/gps.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.3/leaflet.css" />
+
 
 </head>
+
 <body>
     <nav class="navbar fixed-top navbar-expand-lg navbar-light bg-light">
         <div class="container">
-          <a class="navbar-brand" href="/">PhotoStats</a>
-          <div class="navbar-expand" id="navbarNav">
-            <ul class="navbar-nav">
-              <li class="nav-item">
-                <a class="nav-link" href="/">Overview</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link active" href="gps.html" aria-current="page" >Heatmap</a>
-              </li>
-            </ul>
-          </div>
+            <a class="navbar-brand" href="/">PhotoStats</a>
+            <div class="navbar-expand" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Overview</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="gps.html" aria-current="page">Heatmap</a>
+                    </li>
+                </ul>
+            </div>
         </div>
     </nav>
-<div class="visualizer">
-    <div class="map-container">
-        <div class="content">
-            <!-- Intro, before data has been uploaded -->
-            <div id="intro" class="content-box">
-                <h2>Location History Visualizer</h2>
-                <p>Welcome to <b>Location History Visualizer</b> (modified), a tool for visualizing GPS coordinate data with heatmaps. <i>Don't worry&mdash;all processing and visualization happens directly on your computer.</i></p>
-                <p>Use <a href="https://github.com/FSXAC/PhotoStats"><i>PhotoStats</i></a> to generate a .csv file of GPS coordinates from your macOS Photos library</p> 
-                <b>Drag and drop <i>gps.csv</i> from inside that folder onto this page.</b> Let the visualization begin!</p>
-                <p class="fallback">Alternatively, select your <b>gps.csv</b> file directly: <input name="file" type="file" id="file"></input></p>
-                <p class="credit">Heat map implementation forked and modified from <a href="https://github.com/theopolisme/location-history-visualizer">theopolisme</a>.</p>
-            </div>
-
-            <!-- Shown in interim while processing is in progress -->
-            <div id="working" class="content-box hidden">
-                <h2>Processing data...</h2>
-                <div class="loading">
-                    <div class="bounce1"></div>
-                    <div class="bounce2"></div>
-                    <div class="bounce3"></div>
+    <div class="visualizer">
+        <div class="map-container">
+            <div class="content">
+                <!-- Intro, before data has been uploaded -->
+                <div id="intro" class="content-box">
+                    <h2>Location History Visualizer</h2>
+                    <p>Welcome to <b>Location History Visualizer</b> (modified), a tool for visualizing GPS coordinate
+                        data with heatmaps. <i>Don't worry&mdash;all processing and visualization happens directly on
+                            your computer.</i></p>
+                    <p>Use <a href="https://github.com/FSXAC/PhotoStats"><i>PhotoStats</i></a> to generate a .csv file
+                        of GPS coordinates from your macOS Photos library</p>
+                    <b>Drag and drop <i>gps.csv</i> from inside that folder onto this page.</b> Let the visualization
+                    begin!</p>
+                    <p class="fallback">Alternatively, select your <b>gps.csv</b> file directly: <input name="file"
+                            type="file" id="file"></input></p>
+                    <p class="credit">Heat map implementation forked and modified from <a
+                            href="https://github.com/theopolisme/location-history-visualizer">theopolisme</a>.</p>
                 </div>
-                <p><span id="currentStatus">Waking up...</span></p>
-                <p>This may take a while... sit back, get a cup of tea or something.</p>
-                <p><i>Why does it take so long?</i> Depending on how long Google's been tracking your location, you may have hundreds of thousands of [latitude, longitude] pairs, every one of which must be loaded, analyzed, and plotted. That's a lot of dots.</p>
-            </div>
 
-            <!-- Content displayed once processing complete -->
-            <div id="done" class="content-box hidden">
-                <h2>Render complete!</h2>
-                <p>Successfully processed <b><span id="numberProcessed">a lot of</span></b> data points to generate your heatmap.</p>
-                <p style="text-align: center"><button class='btn btn-primary' id="launch">View heatmap</button></p>
-                <p>Usage tips: <i>Zoom</i> by scrolling, double-clicking, or using the buttons in the upper lefthand corner. <i>Navigate</i> by clicking and dragging. Hover over the menu in the lower lefthand corner to customize the heatmap rendering.</p>
-                <p class="credit">Heat map implementation forked and modified from <a href="https://github.com/theopolisme/location-history-visualizer">theopolisme</a>.</p>
+                <!-- Shown in interim while processing is in progress -->
+                <div id="working" class="content-box hidden">
+                    <h2>Processing data...</h2>
+                    <div class="loading">
+                        <div class="bounce1"></div>
+                        <div class="bounce2"></div>
+                        <div class="bounce3"></div>
+                    </div>
+                    <p><span id="currentStatus">Waking up...</span></p>
+                    <p>This may take a while... sit back, get a cup of tea or something.</p>
+                    <p><i>Why does it take so long?</i> Depending on how long Google's been tracking your location, you
+                        may have hundreds of thousands of [latitude, longitude] pairs, every one of which must be
+                        loaded, analyzed, and plotted. That's a lot of dots.</p>
+                </div>
+
+                <!-- Content displayed once processing complete -->
+                <div id="done" class="content-box hidden">
+                    <h2>Render complete!</h2>
+                    <p>Successfully processed <b><span id="numberProcessed">a lot of</span></b> data points to generate
+                        your heatmap.</p>
+                    <p style="text-align: center"><button class='btn btn-primary' id="launch">View heatmap</button></p>
+                    <p>Usage tips: <i>Zoom</i> by scrolling, double-clicking, or using the buttons in the upper lefthand
+                        corner. <i>Navigate</i> by clicking and dragging. Hover over the menu in the lower lefthand
+                        corner to customize the heatmap rendering.</p>
+                    <p class="credit">Heat map implementation forked and modified from <a
+                            href="https://github.com/theopolisme/location-history-visualizer">theopolisme</a>.</p>
+                </div>
             </div>
         </div>
+
+        <!-- Appear when heatmap is displayed -->
+        <div id="controls">
+            <div class="title">
+                Geotag Location Visualizer
+                <span>(hover for additional controls)</span>
+            </div>
+            <div class="control-block">
+                <label for="radius">Point radius</label>
+                <input type="range" min="1" max="30" id="radius" class="control">
+            </div>
+            <div class="control-block">
+                <label for="blur">Blur radius</label>
+                <input type="range" min="1" max="25" id="blur" class="control">
+            </div>
+            <div class="control-block">
+                <label for="heatOpacity">Heat opacity</label>
+                <input type="range" min="0" max="1" step="0.05" id="heatOpacity" class="control">
+            </div>
+            <div class="control-block">
+                <label for="tileOpacity">Map opacity</label>
+                <input type="range" min="0" max="1" step="0.05" id="tileOpacity" class="control">
+            </div>
+            <div class="control-block">
+                <label for="maxZoom">Threshold</label>
+                <input type="range" min="1" max="25" step="0.05" id="maxZoom" class="control">
+            </div>
+            <div class="control-block actions">
+                <button id="reset" class='btn btn-secondary btn-sm'>Reset to defaults</button>
+            </div>
+        </div>
+
+        <!-- The map, populated by leaflet.js -->
+        <div id="map"></div>
     </div>
 
-    <!-- Appear when heatmap is displayed -->
-    <div id="controls">
-        <div class="title">
-            Geotag Location Visualizer
-            <span>(hover for additional controls)</span>
-        </div>
-        <div class="control-block">
-            <label for="radius">Point radius</label>
-            <input type="range" min="1" max="30" id="radius" class="control">
-        </div>
-        <div class="control-block">
-            <label for="blur">Blur radius</label>
-            <input type="range" min="1" max="25" id="blur" class="control">
-        </div>
-        <div class="control-block">
-            <label for="heatOpacity">Heat opacity</label>
-            <input type="range" min="0" max="1" step="0.05" id="heatOpacity" class="control">
-        </div>
-        <div class="control-block">
-            <label for="tileOpacity">Map opacity</label>
-            <input type="range" min="0" max="1" step="0.05" id="tileOpacity" class="control">
-        </div>
-        <div class="control-block">
-            <label for="maxZoom">Threshold</label>
-            <input type="range" min="1" max="25" step="0.05" id="maxZoom" class="control">
-        </div>
-        <div class="control-block actions">
-            <button id="reset" class='btn btn-secondary btn-sm'>Reset to defaults</button>
-        </div>
-    </div>
-
-    <!-- The map, populated by leaflet.js -->
-    <div id="map"></div>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
-<script src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.3/leaflet.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/dropzone/3.8.4/dropzone.min.js"></script>
-<script src="js/lib/leaflet.heat.min.js"></script>
-<script src="js/lib/prettysize.js"></script>
-<script src="js/gps.js?v=3"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
+        crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.3/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dropzone/3.8.4/dropzone.min.js"></script>
+    <script src="js/lib/leaflet.heat.min.js"></script>
+    <script src="js/lib/prettysize.js"></script>
+    <script src="js/gps_heatmap.js?v=3"></script>
 </body>
+
 </html>

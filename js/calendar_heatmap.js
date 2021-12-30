@@ -2,48 +2,54 @@
 
 const CELL_SIZE = 14;
 const NUMBER_OF_COLORS = 6;
+const COUNT_THRESHOLD = 50 /* TODO: this could be an option in UI */
 
 $.ajax({
     type: "GET",
-    url: "heatmap.csv",
+    url: "outdata/calendar_heatmap.csv",
     success: function(data) {
-        var fdata = formatCSVData(data);
-        // console.log(fdata);
-        // TODO:
-        createHeatMap(fdata, '2009', '2022');
+        let formated_data = formatCSVData(data);
+        createHeatMap(formated_data, '2009', '2022');
     }
 });
 
+/* Given a CSV file in text form, return a JS object
+ * with a start date, end date, a table of dates-count mapping.
+ * and max number of counts per date.
+ */
 function formatCSVData(allText) {
-    var allTextLines = allText.split(/\n/);
-    // var headers = allTextLines[0].split(',');
-    // var lines = [];
+    let allTextLines = allText.split(/\n/);
 
-    var dateTable = {};
-    var maxCount = 0;
-    var oldestDate = allTextLines[1][0];
+    let dateTable = {};
+    let maxCount = 0;
+    let oldestDate = allTextLines[1].split(',')[0];
 
-    // var format = d3.timeFormat('%Y-%m-%d');
+    // Note, it's (-2) here because the output .csv file has an empty line
+    let newestDate = allTextLines[allTextLines.length - 2].split(',')[0];
 
-    for (var i = 1; i < allTextLines.length; i++) {
-        var linedata = allTextLines[i].split(',');
+    // For each date in the CSV file
+    for (let i = 1; i < allTextLines.length; i++) {
+        let linedata = allTextLines[i].split(',');
 
-        var date = linedata[0];
-        var count = parseInt(linedata[1]);
+        let date = linedata[0];
+        let count = parseInt(linedata[1]);
 
+        // Add to return object
         if (dateTable[date]) {
             console.log("that shouldn't happen");
         } else {
             dateTable[date] = { count: count }
         }
 
-        if (maxCount < count && count < 50) {
+        // Update max-count and cap it on threshold
+        if (maxCount < count && count < COUNT_THRESHOLD) {
             maxCount = count;
         }
     }
 
     return {
         startDate: oldestDate,
+        endDate: newestDate,
         dates: dateTable,
         maxCount
     };

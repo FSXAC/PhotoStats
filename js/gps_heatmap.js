@@ -122,7 +122,7 @@
 
 	$.ajax({
 		type: "GET",
-		url: "gps.csv",
+		url: "outdata/gps.csv",
 		success: function (data) {
 			// Basically the same as what's inside stage two
 			dropzone.disable();
