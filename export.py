@@ -4,22 +4,24 @@ import osxphotos
 import sys
 
 from datetime import datetime, timedelta
-from pathlib import Path
 
 from score import *
 from sort import *
+from util import *
 
 # Specify the type of exports
 EXPORT_TYPE_GPS_COORDS = 'gps'
 EXPORT_TYPE_CALENDAR_HEATMAP = 'calendar'
 EXPORT_TYPE_CALENDAR_BEST = 'calendar_best'
 EXPORT_TYPE_PEOPLE = 'people'
+EXPORT_TYPE_BEST_DAILY = 'best_daily'
 
 EXPORT_TYPES = [
     EXPORT_TYPE_GPS_COORDS,
     EXPORT_TYPE_CALENDAR_HEATMAP,
     EXPORT_TYPE_CALENDAR_BEST,
     EXPORT_TYPE_PEOPLE,
+    EXPORT_TYPE_BEST_DAILY,
     'all'
 ]
 
@@ -184,8 +186,62 @@ def exportPeopleData(ps:list[osxphotos.PhotoInfo], outdir:str, startdate=None, s
 
     print("Done exporting people data.")
 
+
+def exportBestDailyPhoto(ps_dated:dict[str,list[osxphotos.PhotoInfo]], outdir:str, export_photos:bool, export_score_threshold:float):
+
+    if checkSkippable(outdir, 'best_daily'):
+        print('Photos library did not change; skipping best daily photo export')
+
+    outfile_path = os.path.join(outdir, 'best_daily.csv')
+    print(f'Exporting best photos data to {outfile_path}')
+
+    if export_photos:
+        outfile_photos_path = os.path.join(outdir, 'best_daily')
+        createFolder(outfile_photos_path)
+        print(f'Will export best photos to {outfile_photos_path}')
+
+        export_list: list[osxphotos.PhotoInfo] = list()
+
+    # Export csv file
+    with open(outfile_path, 'w') as outfile:
+
+        # Write header
+        outfile.write('date,best_score,avg_score,filename\n')
+
+        # Write data
+        for key in sorted(ps_dated.keys()):
+            if ps_dated[key]:
+                avg_score = sum([p.score.overall for p in ps_dated[key]]) / len(ps_dated[key])
+                max_score = 0
+                filename = ''
+                best_p = None
+
+                for p in ps_dated[key]:
+                    if p.score.overall > max_score:
+                        max_score = p.score.overall
+                        filename = p.original_filename
+                        best_p = p
+
+                outfile.write(f'{key},{max_score},{avg_score},{filename}\n')
+
+                # Also save photo to file (if enabled)
+                if export_photos and best_p and max_score > export_score_threshold:
+                    export_list.append(best_p)
+    
+    print('Done writing to best.csv')
+
+    if (export_photos):
+        print(f'Exporting {len(export_list)} items with scores over {export_score_threshold * 100}%')
+        for p in export_list:
+            p.export2(
+                outfile_photos_path,
+                p.original_filename,
+            )
+        print('Done exporting best photos')
+
+
 def exportScoreInfo(ps: list[osxphotos.PhotoInfo], attr: str, truncate: int,
-    export_photos: bool, filter_pics: bool, filter_zero_values: bool):
+    export_photos: bool, filter_zero_values: bool):
     """
     Use -1 for truncate to export the entire list and don't truncate the
     sorted results
@@ -196,25 +252,13 @@ def exportScoreInfo(ps: list[osxphotos.PhotoInfo], attr: str, truncate: int,
         return None
 
     sorted_ps = sortByScoreAttribute(ps=ps, attr=attr)
-
-    if (filter_pics):
-        video_ext = ['mov', 'mp4', 'avi', 'mpg']
-        sorted_ps = list(filter(
-            lambda photo: photo.original_filename.split('.')[-1].lower() not in video_ext,
-            sorted_ps))
     
     if (filter_zero_values):
         epsilon = 1e-2
         sorted_ps = list(filter(lambda photo: getattr(photo.score, attr) > epsilon, sorted_ps))
 
     # Make directory
-    outdir = f'outdata/score_{attr}'
-    outdir_path = Path(outdir)
-    try:
-        outdir_path.rmdir()
-    except OSError as e:
-        pass
-    Path(outdir).mkdir(parents=True, exist_ok=True)
+    createFolder(f'outdata/score_{attr}')
 
     with open(f'{outdir}/data.csv', 'w') as outfile:
         outfile.write('photo_file,score\n')
@@ -241,25 +285,7 @@ def exportScoreInfo(ps: list[osxphotos.PhotoInfo], attr: str, truncate: int,
             else:
                 print('Photo libray too big, did not export')
 
-def exportAllScoreInfo(ps: list[osxphotos.PhotoInfo], truncate: int, export_photos: bool, filter_pics: bool, filter_zero_values: bool):
+def exportAllScoreInfo(ps: list[osxphotos.PhotoInfo], truncate: int, export_photos: bool, filter_zero_values: bool):
     for scoreAttr in SCORE_ATTRIBUTES.keys():
         print(f'Exporting sorted score attribute {scoreAttr}, truncate={truncate}')
-        exportScoreInfo(ps, scoreAttr, truncate, export_photos, filter_pics, filter_zero_values)
-
-def generateDayBestPhotoStats(dated: dict):
-    with open('best.csv', 'w') as outfile:
-        outfile.write('date,best_score,avg_score,filename\n')
-        for key in sorted(dated.keys()):
-            if dated[key]:
-                avg_score = sum([p.score.overall for p in dated[key]]) / len(dated[key])
-                max_score = 0
-                filename = ''
-                for p in dated[key]:
-                    if p.score.overall > max_score:
-                        max_score = p.score.overall
-                        filename = p.original_filename
-                outfile.write(f'{key},{max_score},{avg_score},{filename}\n')
-            else:
-                outfile.write(f'{key},0,0,\n')
-    
-    print('Done writing to best.csv')
+        exportScoreInfo(ps, scoreAttr, truncate, export_photos, filter_zero_values)

@@ -10,3 +10,5 @@ __pycache__/*
 outdata/score_*/
 outdata/gps.csv
 outdata/metadata.json
+outdata/best_daily.csv
+outdata/best_daily/*

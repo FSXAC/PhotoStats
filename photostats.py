@@ -26,12 +26,14 @@ default=default_library_path)
 # Optional arguments
 parser.add_argument('--outdir', help='Output directory for the exported data', default='outdata')
 parser.add_argument('--export', help='Specify what kind of data to export', choices=EXPORT_TYPES, default='all')
-parser.add_argument('--ignore-hidden', help='Ignore photos that are hidden (in the hidden album)', action='store_true')
+parser.add_argument('--include-hidden', help='Ignore photos that are hidden (in the hidden album)', action='store_true')
+parser.add_argument('--include-videos', help='Ignore videos and gifs', action='store_true')
 parser.add_argument('--serve', help='After exporting, serve the webpages using http.server', action='store_true')
 parser.add_argument('--force-export', help='Override skipping export certain data', action='store_true')
 
 # Export-specific arguments
 parser.add_argument('--gps-precision', help='Precision of GPS coordinates in export', type=int, choices=range(2, 7), default=5)
+parser.add_argument('--best-photo-score-thres', help='Threshold score for export of best daily photos', type=float, default=0.8)
 
 # Parse the arguments
 args = parser.parse_args()
@@ -65,11 +67,21 @@ def main():
 
     pd = osxphotos.PhotosDB(args.library)
     ps = pd.photos()
-    ps_dated = groupByDate(ps)
+
+    if not args.include_videos:
+        video_exts = ['mov', 'mp4', 'avi', 'mpg', 'mpeg', 'gif']
+        len_prev = len(ps)
+        ps = list(filter(lambda photo: photo.original_filename.split('.')[-1].lower() not in video_exts, ps))
+        print(f'Filtering videos; number of items went from {len_prev} to {len(ps)}')
 
     # Filter hidden photos from the list of photos
-    if args.ignore_hidden:
+    if not args.include_hidden:
+        len_prev = len(ps)
         ps = list(filter(lambda photo: not photo.hidden, ps))
+        print(f'Filtering hidden content; number of items went from {len_prev} to {len(ps)}')
+    
+    # Create date-grouped photo lists
+    ps_dated = groupByDate(ps)
 
     if args.export in ['all', EXPORT_TYPE_GPS_COORDS]:
         exportGPS(ps, args.outdir, args.gps_precision)
@@ -80,37 +92,13 @@ def main():
     if args.export in ['all', EXPORT_TYPE_PEOPLE]:
         exportPeopleData(ps, args.outdir);
 
+    if args.export in ['all', EXPORT_TYPE_BEST_DAILY]:
+        exportBestDailyPhoto(ps_dated, args.outdir, export_photos=True, export_score_threshold=args.best_photo_score_thres)
+
     if args.serve:
         with socketserver.TCPServer(('', 8000), http.server.SimpleHTTPRequestHandler) as httpd:
             print('Serving at http://localhost:8000')
             httpd.serve_forever()
-
-
-    # Group by date
-    # ps_dated = groupByDate(ps)
-
-    # Write stats
-    # exportAllScoreInfo(
-    #     ps=ps,
-    #     truncate=16,
-    #     export_photos=True,
-    #     filter_pics=False,
-    #     filter_zero_values=False)
-    # extractGPStoCSV(ps)
-    # generateCalendarStats(dated)
-    # generateDayBestPhotoStats(dated)
-
-    # Todo use the dict like in calendar and sort PhotoInfo by days
-
-    # Todo generate top pictures of the year by looking at their ScoreInfo
-
-    # Todo like heatmap, but also assign the max ScoreInfo.overall to each day
-
-    # ---
-
-    # exportNamedHeatmap(sortByNameAndDate(ps), '2020-01-01', False)
-
-
 
 if __name__ == '__main__':
     main()
