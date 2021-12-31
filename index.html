@@ -84,11 +84,27 @@ a.nav-link:hover img, a.nav-link:hover span {
   display: inline-block;
 }
 
+@media print {
+  body {
+    font-size: 16px;
+    padding: 1in;
+  }
+
+  .print-hidden {
+    display: none;
+  }
+
+  .inner-container, .container {
+    width: 100%;
+    max-width: 100%;
+  }
+}
+
 </style>
 </head>
 <body>
 <div class="container">
-  <div class='header-nav'></div>
+  <div class='header-nav print-hidden'></div>
   <div class="inner-container">
     <div class="description">
       <h2>Calendar Heatmap</h2>
@@ -101,11 +117,11 @@ a.nav-link:hover img, a.nav-link:hover span {
         and the latest photo taken is <span id="latest-date">X</span>.
         The most number of photos taken is <span id="max-num-photos">0</span>.
       </p>
-      <p>
+      <p class='print-hidden'>
         Hover over each cell to see how many pictures were taken on that day.
         You can also use the controls below to select how many years of data to display.
       </p>
-      <p>
+      <p class='print-hidden'>
         <label for="quantity">Start year:</label><input id="start-year-selector" type="number"></select>
         <label for="quantity">End year:</label><input id="end-year-selector" type="number"></select>
         <button id="year-refresh-btn" disabled>Refresh</button>
