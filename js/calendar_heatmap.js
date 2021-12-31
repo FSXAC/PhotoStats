@@ -13,6 +13,7 @@ function formatCSVData(allText) {
 
     let dateTable = {};
     let maxCount = 0;
+    let maxCount_thresholded = 0;
     let oldestDate = allTextLines[1].split(',')[0];
 
     // Note, it's (-2) here because the output .csv file has an empty line
@@ -33,7 +34,10 @@ function formatCSVData(allText) {
         }
 
         // Update max-count and cap it on threshold
-        if (maxCount < count && count < COUNT_THRESHOLD) {
+        if (maxCount < count) {
+            if (count < COUNT_THRESHOLD) {
+                maxCount_thresholded = count;
+            }
             maxCount = count;
         }
     }
@@ -42,7 +46,8 @@ function formatCSVData(allText) {
         startDate: oldestDate,
         endDate: newestDate,
         dates: dateTable,
-        maxCount
+        maxCount: maxCount,
+        maxCount_thres: maxCount_thresholded
     };
     
 }
@@ -54,17 +59,19 @@ function formatCSVData(allText) {
  */
 function createHeatMap(data, startYear, endYear) {
     var width = 900;
-    var height = 110;
+    var height = 120;
     var dx = 18;
     var gridClass = 'js-date-grid day';
+
+    // Create color range
     var formatColor = d3.scaleQuantize()
-        .domain([0, data.maxCount])
+        .domain([0, data.maxCount_thres])
         .range(d3.range(NUMBER_OF_COLORS).map((d) => `color${d}`));
 
     var heatmapSvg = d3.select('.js-heatmap').selectAll('svg.heatmap')
         .enter()
         .append('svg')
-        .data(d3.range(startYear, endYear))
+        .data(d3.range(startYear, (parseInt(endYear) + 1).toString()))
         .enter()
         .append('svg')
         .attr('width', width)
@@ -121,7 +128,7 @@ function createHeatMap(data, startYear, endYear) {
         .data([1])
         .enter()
         .append('svg')
-        .attr('width', 800)
+        .attr('width', width)
         .attr('height', 20)
         .append('g')
         .attr('transform', 'translate(0,10)')
@@ -132,25 +139,8 @@ function createHeatMap(data, startYear, endYear) {
         .attr('x', (d) => d * (4.5 * CELL_SIZE) + dx)
         .text((d) => d3.timeFormat('%b')(new Date(0, d + 1, 0)));
 
-    // Render the grid color legend.
-    var legendSvg = d3.select('.js-legend').selectAll('svg.legend')
-        .enter()
-        .append('svg')
-        .data([1])
-        .enter()
-        .append('svg')
-        .attr('width', 800)
-        .attr('height', 20)
-        .append('g')
-        .attr('transform', 'translate(644,0)')
-        .selectAll('.legend-grid')
-        .data(() => d3.range(7))
-        .enter()
-        .append('rect')
-        .attr('width', CELL_SIZE)
-        .attr('height', CELL_SIZE)
-        .attr('x', (d) => d * CELL_SIZE + dx)
-        .attr('rx', 4)
-        .attr('class', (d) => `day color${d - 1}`);
-
+    // Update webpage stuff
+    $('#earliest-date').text(data.startDate);
+    $('#latest-date').text(data.endDate);
+    $('#max-num-photos').text(data.maxCount)
 }

@@ -79,6 +79,11 @@ a.nav-link:hover img, a.nav-link:hover span {
   font-size: 11px;
 }
 
+.form-select {
+  width: auto;
+  display: inline-block;
+}
+
 </style>
 </head>
 <body>
@@ -92,7 +97,18 @@ a.nav-link:hover img, a.nav-link:hover span {
         Each cell represents a day in a year; the darker the colour of the cell is, the more photos were taken on that day.
       </p>
       <p>
+        The earliest photo taken is <span id="earliest-date">X</span>
+        and the latest photo taken is <span id="latest-date">X</span>.
+        The most number of photos taken is <span id="max-num-photos">0</span>.
+      </p>
+      <p>
         Hover over each cell to see how many pictures were taken on that day.
+        You can also use the controls below to select how many years of data to display.
+      </p>
+      <p>
+        <label for="quantity">Start year:</label><input id="start-year-selector" type="number"></select>
+        <label for="quantity">End year:</label><input id="end-year-selector" type="number"></select>
+        <button id="year-refresh-btn" disabled>Refresh</button>
       </p>
     </div>
     <div class="heatmap">
@@ -105,16 +121,64 @@ a.nav-link:hover img, a.nav-link:hover span {
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.4.0/d3.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
 <script>
+let formated_data;
+let startYear;
+let endYear;
+
+function populateYearSelector(id, start, end, defaultVal) {
+  $(id).prop('min', start);
+  $(id).prop('max', end);
+  $(id).prop('value', defaultVal);
+}
+
 $(document).ready(()=> {
   $('.header-nav').load('navigation.html');
   $.ajax({
     type: "GET",
     url: "outdata/calendar_heatmap.csv",
     success: function (data) {
-      let formated_data = formatCSVData(data);
-      createHeatMap(formated_data, '2009', '2022');
+      formated_data = formatCSVData(data);
+      
+      startYear = new Date(formated_data.startDate).getFullYear();
+      endYear = new Date(formated_data.endDate).getFullYear();
+
+      let defaultStart = '2015';
+      let defaultEnd = endYear;
+      populateYearSelector('#start-year-selector', startYear, endYear, defaultStart);
+      populateYearSelector('#end-year-selector', startYear, endYear, defaultEnd);
+      createHeatMap(formated_data, defaultStart, defaultEnd);
     }
   });
+
+  $('#start-year-selector').bind('keyup mouseup', function() {
+    let year = $('#start-year-selector').val();
+    populateYearSelector('#end-year-selector', parseInt(year), endYear);
+    $('#year-refresh-btn').prop('disabled', false);
+  });
+
+  $("#year-refresh-btn").on('click', function() {
+    let y1 = $("#start-year-selector").val();
+    let y2 = $("#end-year-selector").val();
+
+    $('.js-heatmap').html('');
+    $('.js-months').html('');
+
+    createHeatMap(formated_data, y1, y2);
+  })
+
+  // Restrict input ranges (https://stackoverflow.com/questions/36349260/restrict-input-type-number-to-its-min-or-max-if-it-is-out-of-range/53752458)
+  $(function () {
+    $("input").change(function() {
+      var max = parseInt($(this).attr('max'));
+      var min = parseInt($(this).attr('min'));
+      if ($(this).val() > max) {
+        $(this).val(max);
+      }
+      else if ($(this).val() < min) {
+        $(this).val(min);
+      }
+    });
+  }); 
 });
 </script>
 <script type="text/javascript" src="js/calendar_heatmap.js"></script>
