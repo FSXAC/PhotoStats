@@ -9,3 +9,4 @@ __pycache__/*
 .vscode/*
 outdata/score_*/
 outdata/gps.csv
+outdata/metadata.json

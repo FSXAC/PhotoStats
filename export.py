@@ -1,5 +1,7 @@
+import json
 import os
 import osxphotos
+import sys
 
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -21,12 +23,50 @@ EXPORT_TYPES = [
     'all'
 ]
 
+def checkSkippable(outdir:str, type:str):
+    """
+    Checks the metadata for timestamp to see if this type of export
+    can be skipped; if not, also update the new timestamp
+    """
+    metadata_filepath = os.path.join(outdir, 'metadata.json')
+    if os.path.exists(metadata_filepath):
+
+        metadata = {}
+        with open(metadata_filepath, 'r') as metadata_file:
+            metadata = json.load(metadata_file)
+        
+        if metadata:
+            library_timestamp = metadata['library_last_modified']
+
+            if type in metadata and metadata[type] == library_timestamp:
+                # Skip
+                return True
+            else:
+
+                # Update new timestamp and don't skip
+                metadata[type] = library_timestamp
+                with open(metadata_filepath, 'w') as metadata_outfile:
+                    json.dump(metadata, metadata_outfile)
+
+                return False
+        else:
+            print("Error: metadata not available")
+            sys.exit(1)
+    else:
+        # This shouldn't happen because a metadata file should've been populated at init time
+        print("Error: missing metadata file")
+        sys.exit(1)
+
 def exportGPS(ps:list[osxphotos.PhotoInfo], outdir:str, precision:int=5):
     """
     Exports gps.csv which contains a list of all GPS coordinates and
     with a precision of 5-decimal places by default -- which is about
     1.1 meters
     """
+
+    if checkSkippable(outdir, 'gps'):
+        print('Photos library did not change; skipping GPS data export')
+        return
 
     outfile_path = os.path.join(outdir, 'gps.csv')
     print(f'Exporting GPS data to {outfile_path} with {5} decimal places for coordinates precision')
@@ -59,6 +99,10 @@ def exportCalendarHeatmap(ps_dated:dict[str,list[osxphotos.PhotoInfo]], outdir:s
     photos taken on that day, this csv file will be used in the web view
     """
 
+    if checkSkippable(outdir, 'calendar_heatmap'):
+        print('Photos library did not change; skipping calendar heatmap data export')
+        return
+
     outfile_path = os.path.join(outdir, 'calendar_heatmap.csv')
     print(f'Exporting calendar heatmap data to {outfile_path}')
 
@@ -74,6 +118,10 @@ def exportPeopleData(ps:list[osxphotos.PhotoInfo], outdir:str, startdate=None, s
     """
     Export a csv file with occurances of people throughout the dates
     """
+
+    if checkSkippable(outdir, 'people'):
+        print('Photos library did not change; skipping people data export')
+        return
 
     # Group by name and then date
     grouped = groupByNameAndDate(ps)

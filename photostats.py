@@ -4,6 +4,7 @@
 
 import argparse
 import http.server
+import json
 import os
 import osxphotos
 import socketserver
@@ -27,6 +28,7 @@ parser.add_argument('--outdir', help='Output directory for the exported data', d
 parser.add_argument('--export', help='Specify what kind of data to export', choices=EXPORT_TYPES, default='all')
 parser.add_argument('--ignore-hidden', help='Ignore photos that are hidden (in the hidden album)', action='store_true')
 parser.add_argument('--serve', help='After exporting, serve the webpages using http.server', action='store_true')
+parser.add_argument('--force-export', help='Override skipping export certain data', action='store_true')
 
 # Export-specific arguments
 parser.add_argument('--gps-precision', help='Precision of GPS coordinates in export', type=int, choices=range(2, 7), default=5)
@@ -44,7 +46,22 @@ def main():
 
     print(f"Opening photo library at {args.library}, this may take a while.")
 
+    # Create a metadata file to speedthings up by not duplicating exports
+    metadata_filepath = os.path.join(args.outdir, 'metadata.json')
+    metadata = {}
+
+    if os.path.exists(metadata_filepath) and not args.force_export:
+        print('Metadata file detected, modified timestamp will be compared to reduce redundant export; use --force-export to override')
+        with open(metadata_filepath, 'r') as metadata_file:
+            metadata = json.load(metadata_file)
+    else:
+        metadata = {'library_last_modified': os.path.getmtime(args.library)}
+
+    with open(metadata_filepath, 'w') as metadata_outfile:
+        json.dump(metadata, metadata_outfile)
+
     # TEMP
+    # return
 
     pd = osxphotos.PhotosDB(args.library)
     ps = pd.photos()
