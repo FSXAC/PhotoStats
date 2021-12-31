@@ -11,6 +11,7 @@
             "program": "photostats.py",
             "console": "integratedTerminal",
             "args": [
+                "--export=people"
             ],
         }
     ]

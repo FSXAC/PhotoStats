@@ -33,7 +33,7 @@ def groupByDate(ps:list[osxphotos.PhotoInfo]):
 
 # This sorts the photos (with tagged faces) into a dictionary of dictionaries:
 # {name1: { date1: [photos], date2: [photos]}, name2: ... }
-def sortByNameAndDate(ps: list[osxphotos.PhotoInfo]):
+def groupByNameAndDate(ps: list[osxphotos.PhotoInfo]):
     # first we should have a dict of lists
     named = dict()
     
