@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Apple Photos Peoples Ridgeline</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+<link rel="stylesheet" href="css/main.css" />
+</head>
+<body>
+<div class="container">
+    <div class="header-nav"></div>
+    <div id="people-graph"></div>
+</div>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.4.0/d3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
+    crossorigin="anonymous"></script>
+<script>
+$(document).ready(() => {
+    $('.header-nav').load('navigation.html', ()=> {
+        $('#nav-people-ridgeline').addClass('active');
+    });
+});
+</script>
+<script>
+
+    function responsivefy(svg) {
+            // get container + svg aspect ratio
+            var container = d3.select(svg.node().parentNode),
+                width = parseInt(svg.style("width")),
+                height = parseInt(svg.style("height")),
+                aspect = width / height;
+
+            // add viewBox and preserveAspectRatio properties,
+            // and call resize so that svg resizes on inital page load
+            svg.attr("viewBox", "0 0 " + width + " " + height)
+                .attr("perserveAspectRatio", "xMinYMid")
+                .call(resize);
+
+            // to register multiple listeners for same event type, 
+            // you need to add namespace, i.e., 'click.foo'
+            // necessary if you call invoke this function for multiple svgs
+            // api docs: https://github.com/mbostock/d3/wiki/Selections#on
+            d3.select(window).on("resize." + container.attr("id"), resize);
+
+            // get width of container and resize svg to fit it
+            function resize() {
+                var targetWidth = parseInt(container.style("width"));
+                svg.attr("width", targetWidth);
+                svg.attr("height", Math.round(targetWidth / aspect));
+            }
+        }
+
+
+    // set the dimensions and margins of the graph
+    var parent = d3.select('#people-graph').node();
+    var margin = { top: 110, right: 30, bottom: 20, left: 110 };
+    var width = parent.getBoundingClientRect().width - margin.left - margin.right;
+    var height = 600 - margin.top - margin.bottom;
+
+    var svg = d3.select("#people-graph")
+        .append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+        .attr("transform",
+            "translate(" + margin.left + "," + margin.top + ")");
+
+    //read data
+    d3.csv("https://raw.githubusercontent.com/zonination/perceptions/master/probly.csv", function(data) {
+
+        // Get the different categories and count them
+        var categories = data.columns
+        var n = categories.length
+
+        // Add X axis
+        var x = d3.scaleLinear()
+            .domain([-10, 140])
+            .range([0, width]);
+        svg.append("g")
+            .attr("transform", "translate(0," + height + ")")
+            .call(d3.axisBottom(x));
+
+        // Create a Y scale for densities
+        var y = d3.scaleLinear()
+            .domain([0, 0.4])
+            .range([height, 0]);
+
+        // Create the Y axis for names
+        var yName = d3.scaleBand()
+            .domain(categories)
+            .range([0, height])
+            .paddingInner(1)
+        svg.append("g")
+            .call(d3.axisLeft(yName));
+
+        // Compute kernel density estimation for each column:
+        var kde = kernelDensityEstimator(kernelEpanechnikov(7), x.ticks(40)) // increase this 40 for more accurate density.
+        var allDensity = []
+        for (i = 0; i < n; i++) {
+            key = categories[i]
+            density = kde(data.map(function (d) { return d[key]; }))
+            allDensity.push({ key: key, density: density })
+        }
+
+        // Add areas
+        svg.selectAll("areas")
+            .data(allDensity)
+            .enter()
+            .append("path")
+            .attr("transform", function (d) { return ("translate(0," + (yName(d.key) - height) + ")") })
+            .datum(function (d) { return (d.density) })
+            .attr("fill", "#69b3a2")
+            .attr("stroke", "#000")
+            .attr("stroke-width", 1)
+            .attr("d", d3.line()
+                .curve(d3.curveBasis)
+                .x(function (d) { return x(d[0]); })
+                .y(function (d) { return y(d[1]); })
+            )
+
+    })
+
+    // This is what I need to compute kernel density estimation
+    function kernelDensityEstimator(kernel, X) {
+        return function (V) {
+            return X.map(function (x) {
+                return [x, d3.mean(V, function (v) { return kernel(x - v); })];
+            });
+        };
+    }
+    function kernelEpanechnikov(k) {
+        return function (v) {
+            return Math.abs(v /= k) <= 1 ? 0.75 * (1 - v * v) / k : 0;
+        };
+    }
+
+</script>
+</body>
+</html>
