@@ -2,34 +2,25 @@
 <html>
 
 <head>
-    <title>Location History Visualizer | Heatmap</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-    <meta name="description" content="Visualize GPS coordinates in browser.">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
-        integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
-    <link rel="stylesheet" href="css/main.css" />
-    <link rel="stylesheet" href="css/gps.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.3/leaflet.css" />
-
-
+<title>Apple Photos Location Heatmap</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="description" content="Visualize GPS coordinates in browser.">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+<link rel="stylesheet" href="css/main.css" />
+<link rel="stylesheet" href="css/gps.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.3/leaflet.css" />
+<style>
+#map {
+    width: 96%;
+    margin-left: auto;
+    margin-right: auto;
+}
+</style>
 </head>
 
 <body>
-    <nav class="navbar fixed-top navbar-expand-lg navbar-light bg-light">
-        <div class="container">
-            <a class="navbar-brand" href="/">PhotoStats</a>
-            <div class="navbar-expand" id="navbarNav">
-                <ul class="navbar-nav">
-                    <li class="nav-item">
-                        <a class="nav-link" href="/">Overview</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link active" href="gps.html" aria-current="page">Heatmap</a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
+    <div class='header-nav print-hidden'></div>
     <div class="visualizer">
         <div class="map-container">
             <div class="content">
@@ -123,6 +114,13 @@
     <script src="js/lib/leaflet.heat.min.js"></script>
     <script src="js/lib/prettysize.js"></script>
     <script src="js/gps_heatmap.js?v=3"></script>
+    <script>
+        $(document).ready(() => {
+            $('.header-nav').load('navigation.html', () => {
+                $('#nav-gps-heatmap').addClass('active');
+            });
+        });
+    </script>
 </body>
 
 </html>
