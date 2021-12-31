@@ -70,29 +70,33 @@ def exportCalendarHeatmap(ps_dated:dict[str,list[osxphotos.PhotoInfo]], outdir:s
     print(f'Done writing calendar heatmap data')
 
 
-def exportNamedHeatmap(named: dict, setmindate = None, skipZeroDays=False):
+def exportPeopleData(ps:list[osxphotos.PhotoInfo], outdir:str, startdate=None, skipzerodays=False):
+    """
+    Export a csv file with occurances of people throughout the dates
+    """
 
-    # Generate name-index map and write to file
-    names = sorted(named.keys())
-    with open('people_index.csv', 'w') as outfile:
-        outfile.write('index,name\n')
-        for idx, name in enumerate(names):
-            outfile.write(f'{idx},{name}\n')
+    # Group by name and then date
+    grouped = groupByNameAndDate(ps)
+
+    # Get all names
+    names = sorted(grouped.keys())
 
     # Combine all dates
-    dates = set()
-    for _, ps in named.items():
-        dates |= set(ps.keys())
+    dates_set = set()
+    for _, photos in grouped.items():
+        dates_set |= set(photos.keys())
+    dates = sorted(list(dates_set))
 
-    dates = sorted(dates)
-    if setmindate:
-        mindate = setmindate
+    # Truncate to starting date
+    if startdate:
+        mindate = startdate
     else:
         mindate = dates[0]
     maxdate = dates[-1]
 
+    # Skip days where no one shows up; otherwise, add dates
     alldates = dict()
-    if skipZeroDays:
+    if skipzerodays:
         for d in dates:
             alldates[d] = {}
     else:
@@ -105,10 +109,8 @@ def exportNamedHeatmap(named: dict, setmindate = None, skipZeroDays=False):
             alldates[start.strftime('%Y-%m-%d')] = {}
             start += delta
 
-    print(f'mindate: {mindate}, maxdate: {maxdate}, number of days in between: {len(alldates.keys())}')
-
     # Populate the alldates dict
-    for name, dated in named.items():
+    for name, dated in grouped.items():
         # find name index
         index = names.index(name)
         for datekey, photos in dated.items():
@@ -116,18 +118,23 @@ def exportNamedHeatmap(named: dict, setmindate = None, skipZeroDays=False):
                 alldates[datekey][index] = len(photos)
             except KeyError:
                 continue
-    
-    # write to file (2d csv)
-    with open('people_data.csv', 'w') as f:
+
+    # Write to file
+    outfile_path = os.path.join(outdir, 'people_data.csv')
+    print(f'Exporting people data to {outfile_path}')
+
+    with open(outfile_path, 'w') as outfile:
 
         # Write headers
-        f.write(f'date,{",".join([str(i) for i in range(len(names))])}\n')
+        outfile.write(f'date,{",".join(names)}\n')
 
         # Write data
         for key in sorted(alldates.keys()):
             day_data = alldates[key]
             out_people_data = ['0' if i not in day_data else str(day_data[i]) for i in range(len(names))]
-            f.write(f'{key},{",".join(out_people_data)}\n')
+            outfile.write(f'{key},{",".join(out_people_data)}\n')
+
+    print("Done exporting people data.")
 
 def exportScoreInfo(ps: list[osxphotos.PhotoInfo], attr: str, truncate: int,
     export_photos: bool, filter_pics: bool, filter_zero_values: bool):

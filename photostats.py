@@ -60,6 +60,9 @@ def main():
     if args.export in ['all', EXPORT_TYPE_CALENDAR_HEATMAP]:
         exportCalendarHeatmap(ps_dated, args.outdir)
 
+    if args.export in ['all', EXPORT_TYPE_PEOPLE]:
+        exportPeopleData(ps, args.outdir);
+
     if args.serve:
         with socketserver.TCPServer(('', 8000), http.server.SimpleHTTPRequestHandler) as httpd:
             print('Serving at http://localhost:8000')
