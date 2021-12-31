@@ -1,43 +1,123 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Apple Photos Library Stats</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
-    integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
-  <link rel="stylesheet" type="text/css" href="css/main.css">
-</head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Apple Photos Library Stats</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+<style>
+body {
+  padding-bottom: 3em;
+  font-size: 14px;
+}
 
+.header-nav {
+  text-align: center;
+  margin-bottom: 50px;
+}
+
+.header-nav h1 {
+  margin-top: 1em;
+  margin-bottom: 1em;
+}
+
+a.nav-link img {
+  width: 80px;
+  border-radius: 50%;
+  filter: saturate(0.0);
+  -webkit-filter: saturate(0.0);
+  transition-property: filter, -webkit-filter, opacity;
+  transition-duration: 0.3s;
+  transition-timing-function: ease-out;
+}
+
+a.nav-link span {
+  display: block;
+  color: initial;
+  opacity: 0.3;
+  margin-top: .5em;
+}
+
+a.nav-link.active span {
+  opacity: 1.0;
+}
+
+a.nav-link:hover span {
+  opacity: 1;
+}
+
+a.nav-link.active img, a.nav-link:hover img {
+  filter: saturate(1.0);
+  -webkit-filter: saturate(1.0);
+}
+
+a.nav-link:hover img, a.nav-link:hover span {
+  opacity: 1.0;;
+}
+
+.day {
+    fill: #f6f6f6;
+    stroke: #fff;
+    stroke-width: 2;
+}
+
+.color0 { fill: #c6dbef }
+.color1 { fill: #9ecae1 }
+.color2 { fill: #6baed6 }
+.color3 { fill: #4292c6 }
+.color4 { fill: #2171b5 }
+.color5 { fill: #084594 }
+
+.inner-container {
+  width: 800px;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.heatmap {
+  font-size: 11px;
+}
+
+</style>
+</head>
 <body>
-  <nav class="navbar fixed-top navbar-expand-lg navbar-light bg-light">
-    <div class="container">
-      <a class="navbar-brand" href="/">PhotoStats</a>
-      <div class="navbar-expand" id="navbarNav">
-        <ul class="navbar-nav">
-          <li class="nav-item">
-            <a class="nav-link active" aria-current="page" href="#">Calendar Heatmap</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="gps.html">GPS Heatmap</a>
-          </li>
-        </ul>
-      </div>
+<div class="container">
+  <div class='header-nav'></div>
+  <div class="inner-container">
+    <div class="description">
+      <h2>Calendar Heatmap</h2>
+      <p>
+        This graph shows the photos taken on each date displayed in a Github-style calendar heatmap
+        Each cell represents a day in a year; the darker the colour of the cell is, the more photos were taken on that day.
+      </p>
+      <p>
+        Hover over each cell to see how many pictures were taken on that day.
+      </p>
     </div>
-  </nav>
-  <div class="container results">
-    <h1>Photos by Days</h1>
-    <div class="js-heatmap"></div>
-    <div class="js-months"></div>
-    <div class="js-legend"></div>
+    <div class="heatmap">
+      <div class="js-heatmap"></div>
+      <div class="js-months"></div>
+    </div>
   </div>
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.4.0/d3.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
-    integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
-    crossorigin="anonymous"></script>
-  <script type="text/javascript" src="js/calendar_heatmap.js"></script>
+</div>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.4.0/d3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+<script>
+$(document).ready(()=> {
+  $('.header-nav').load('navigation.html');
+  $.ajax({
+    type: "GET",
+    url: "outdata/calendar_heatmap.csv",
+    success: function (data) {
+      let formated_data = formatCSVData(data);
+      createHeatMap(formated_data, '2009', '2022');
+    }
+  });
+});
+</script>
+<script type="text/javascript" src="js/calendar_heatmap.js"></script>
 </body>
 
 </html>

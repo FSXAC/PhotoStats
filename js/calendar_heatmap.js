@@ -4,15 +4,6 @@ const CELL_SIZE = 14;
 const NUMBER_OF_COLORS = 6;
 const COUNT_THRESHOLD = 50 /* TODO: this could be an option in UI */
 
-$.ajax({
-    type: "GET",
-    url: "outdata/calendar_heatmap.csv",
-    success: function(data) {
-        let formated_data = formatCSVData(data);
-        createHeatMap(formated_data, '2009', '2022');
-    }
-});
-
 /* Given a CSV file in text form, return a JS object
  * with a start date, end date, a table of dates-count mapping.
  * and max number of counts per date.
@@ -53,8 +44,8 @@ function formatCSVData(allText) {
         dates: dateTable,
         maxCount
     };
+    
 }
-
 /**
  * Render the heatmap and any other svg elements
  * @param  {Object} data
@@ -159,6 +150,7 @@ function createHeatMap(data, startYear, endYear) {
         .attr('width', CELL_SIZE)
         .attr('height', CELL_SIZE)
         .attr('x', (d) => d * CELL_SIZE + dx)
+        .attr('rx', 4)
         .attr('class', (d) => `day color${d - 1}`);
 
 }
