@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Apple Photos Best Daily</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+<link rel="stylesheet" href="css/main.css" />
+<style>
+#gallery img { width: 100%; }
+#gallery p.score { font-size: 60%; }
+</style>
+</head>
+
+<body>
+<div class="container">
+    <div class="header-nav"></div>
+    <div class="row" id='gallery'>
+    </div>
+</div>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.4.0/d3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
+    crossorigin="anonymous"></script>
+<script>
+
+function populateBestDaily(data) {
+    let lines = data.split(/\n/);
+    let container = $('#gallery');
+    let template = `<div class="col-sm-3"><img src="{image_src}"><p>{date}</p><p class="score">{score}</p></div>`
+
+    for (let i = 0; i < lines.length; i++) {
+        let linedata = lines[i].split(',');
+        let date = linedata[0];
+        let image = linedata[3];
+        container.append(
+            template
+            .replace('{image_src}', 'outdata/best_daily/' + image)
+            .replace('{date}', date)
+        )
+    }
+}
+
+$(document).ready(() => {
+    $('.header-nav').load('navigation.html', () => {
+        $('#nav-best-daily').addClass('active');
+    });
+
+    $.ajax({
+        type: "GET",
+        url: "outdata/best_daily.csv",
+        success: function(data) {
+            populateBestDaily(data);
+        }
+    });
+});
+</script>
+</body>
+
+</html>
