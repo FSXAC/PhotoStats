@@ -242,6 +242,7 @@ def exportBestDailyPhoto(ps_dated:dict[str,list[osxphotos.PhotoInfo]], outdir:st
             p.export2(
                 outfile_photos_path,
                 p.original_filename,
+                use_photos_export=True
             )
         print('Done exporting best photos')
 
