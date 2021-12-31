@@ -191,6 +191,7 @@ def exportBestDailyPhoto(ps_dated:dict[str,list[osxphotos.PhotoInfo]], outdir:st
 
     if checkSkippable(outdir, 'best_daily'):
         print('Photos library did not change; skipping best daily photo export')
+        return
 
     outfile_path = os.path.join(outdir, 'best_daily.csv')
     print(f'Exporting best photos data to {outfile_path}')
@@ -221,6 +222,11 @@ def exportBestDailyPhoto(ps_dated:dict[str,list[osxphotos.PhotoInfo]], outdir:st
                         max_score = p.score.overall
                         filename = p.original_filename
                         best_p = p
+
+                # There is a case where none of the photos has score > 0
+                # in which case, just skip the day
+                if not filename:
+                    continue
 
                 outfile.write(f'{key},{max_score},{avg_score},{filename}\n')
 
