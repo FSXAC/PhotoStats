@@ -11,32 +11,34 @@ $(document).ready(() => {
         url: "outdata/people_data.json",
         success: function (data) {
             peopleData = data;
-
-            // Sort by total
-            peopleData.series.sort((a, b) => (a.total < b.total) ? 1 : ((b.total < a.total) ? -1 : 0))
-
-
-            console.log(data);
             startRender();
         }
     });
 });
 
 // Global properties
-const g = {
+let g = {
     bg_color: "#fff",
     border_width: 0,
     border_color: "#888",
-    row_height: 16,
-    date_width: 1 / 4,
+    row_height: 20,
+    bar_height: 16,
+    date_width: 1,
     grid_color: "#eee",
     name_margin: 140,
     padding: 0,
     dotsize: 5,
-    line_color_dark: "#000",
-    line_color_light: "#6baed6",
+    line_color_lighter: "#c6dbef",
+    line_color_light: "#9ecae1",
+    line_color_dark: "#084594",
+    line_color_darker: "#000",
     truncate_top_people: 12,
-    starting_Date: "2020-01-01"
+    starting_date: "2020-01-01",
+    convolve_data: true,
+    convolution_size: 5,
+    draw_grid: false,
+    show_name_count: true,
+    right_align_names: true
 };
 
 function calculateCanvasWidth(data_width) {
@@ -71,8 +73,66 @@ function getMonthStartDateIndices(dates) {
 
 function startRender() {
 
+    // Filter / truncate data from dates
+    if (g.starting_date) {
+
+        // If specified starting date, try to find an index to truncate the date series
+        const startIndex = peopleData.dates.indexOf(g.starting_date);
+
+        if (startIndex != -1) {
+            peopleData.dates = peopleData.dates.slice(startIndex, peopleData.dates.length);
+
+            // Do the same for all person data (since parallel arrays)
+            for (let j = 0; j < peopleData.series.length; j++) {
+                peopleData.series[j].values = peopleData.series[j].values.slice(startIndex, peopleData.series[j].values.length);
+
+                // Update sum
+                peopleData.series[j].total = peopleData.series[j].values.reduce((a, b) => a + b, 0);
+            }
+        }
+    }
+
+    // Sort by total
+    peopleData.series.sort((a, b) => (a.total < b.total) ? 1 : ((b.total < a.total) ? -1 : 0));
+
+    // Filter / truncate data from top people
+    if (g.truncate_top_people && g.truncate_top_people > 0) {
+        peopleData.series = peopleData.series.slice(0, g.truncate_top_people);
+    }
+
+    // Perform convultion on data if it's enabled
+    const halfConvSize = Math.floor(g.convolution_size / 2);
+    if (g.convolve_data && g.convolution_size >= 3) {
+        for (let i = 0; i < peopleData.series.length; i++) {
+            const valuesLength = peopleData.series[i].values.length;
+            let newValues = Array(valuesLength);
+
+            for (let j = 0; j < valuesLength; j++) {
+                let start = j - halfConvSize;
+                let end = j + halfConvSize;
+                let sum = 0;
+
+                for (let k = start; k < end; k++) {
+                    if (k < 0 || k >= valuesLength ) {
+                        continue;
+                    }
+                    sum += peopleData.series[i].values[k];
+                }
+
+                newValues[j] = sum / g.convolution_size;
+            }
+
+            // replace array
+            peopleData.series[i].values = newValues;
+        }
+    }
+
+    console.log(peopleData);
+
+    // DONE processing data
+
     const date_size = peopleData.dates.length;
-    const people_size = (g.truncate_top_people > 0) ? g.truncate_top_people : peopleData.series.length;
+    const people_size = peopleData.series.length;
 
     console.log("Data loaded with " + date_size + " dates and " + people_size + " people");
 
@@ -97,11 +157,6 @@ function startRender() {
         p.noStroke();
         p.fill(255, 150);
         p.rect(0, 0, g.name_margin, p.height - 2 * g.padding);
-
-        // Draw starting vertical line
-        p.stroke(g.grid_color);
-        p.line(g.name_margin, 0, g.name_margin, p.height - 2 * g.padding)
-
         
         // Draw vertical grid lines
         p.translate(g.name_margin, 0);
@@ -119,11 +174,25 @@ function startRender() {
         p.translate(g.padding, g.padding);
         p.fill(0);
         p.noStroke();
-        p.textAlign(p.LEFT, p.CENTER);
-        for (let i = 0; i < people_size; i++) {
-            const name = peopleData.series[i].name + " (" + peopleData.series[i].total + ")";
-            p.text(name, g.padding, mapDataIndexToScreenCoords(0, i).y);
+
+        if (g.right_align_names) {
+            p.textAlign(p.RIGHT, p.CENTER);
+        } else {
+            p.textAlign(p.LEFT, p.CENTER);
         }
+        for (let i = 0; i < people_size; i++) {
+            let name = peopleData.series[i].name
+            if (g.show_name_count) {
+                name += " (" + peopleData.series[i].total + ")";
+            }
+
+            const nameY = mapDataIndexToScreenCoords(0, i).y
+            p.text(name, (g.right_align_names) ? g.name_margin - 10  : g.padding, nameY);
+        }
+
+        // Draw starting vertical line
+        p.stroke(g.grid_color);
+        p.line(g.name_margin, 0, g.name_margin, p.height - 2 * g.padding)
         p.pop();
     }
 
@@ -147,9 +216,9 @@ function startRender() {
 
                     let plot_pos = mapDataIndexToScreenCoords(j, i);
                     p.stroke(p.lerpColor(
-                        p.color(g.line_color_light), p.color(g.line_color_dark), p.constrain(
-                            p.map(value, 0, 50, 0, 1), 0, 1)));
-                    const dy = 0.5 * g.row_height;
+                        p.color(g.line_color_lighter), p.color(g.line_color_dark), p.constrain(
+                            p.map(Math.sqrt(value), 0, 5, 0, 1), 0, 1)));
+                    const dy = 0.5 * g.bar_height;
                     p.line(plot_pos.x, plot_pos.y - dy, plot_pos.x, plot_pos.y + dy);
                 }
             }
@@ -197,7 +266,9 @@ function startRender() {
 
         p.draw = () => {
             drawBorder(p);
-            drawGrid(p);
+            if (g.draw_grid) {
+                drawGrid(p);
+            }
             plotPeopleData(p);
             drawNames(p);
         }
