@@ -116,7 +116,7 @@ def exportCalendarHeatmap(ps_dated:dict[str,list[osxphotos.PhotoInfo]], outdir:s
     print(f'Done writing calendar heatmap data')
 
 
-def exportPeopleData(ps:list[osxphotos.PhotoInfo], outdir:str, startdate=None, skipzerodays=False):
+def exportPeopleData(ps:list[osxphotos.PhotoInfo], outdir:str, startdate=None, skipzerodays=False, use_json=True):
     """
     Export a csv file with occurances of people throughout the dates
     """
@@ -170,22 +170,61 @@ def exportPeopleData(ps:list[osxphotos.PhotoInfo], outdir:str, startdate=None, s
                 continue
 
     # Write to file
-    outfile_path = os.path.join(outdir, 'people_data.csv')
+    outfile_path = os.path.join(outdir, 'people_data.json' if use_json else 'people_data.csv')
     print(f'Exporting people data to {outfile_path}')
 
     with open(outfile_path, 'w') as outfile:
 
-        # Write headers
-        outfile.write(f'date,{",".join(names)}\n')
+        if use_json:
+            dates = sorted(alldates.keys())
+            out_data = { 'dates': dates, 'series': [] }
 
-        # Write data
-        for key in sorted(alldates.keys()):
-            day_data = alldates[key]
-            out_people_data = ['0' if i not in day_data else str(day_data[i]) for i in range(len(names))]
-            outfile.write(f'{key},{",".join(out_people_data)}\n')
+            for name in names:
+                new_person_data = {
+                    'name': name,
+                    'values': []
+                }
+
+                for date in dates:
+                    if date in grouped[name]:
+                        new_person_data['values'].append(len(grouped[name][date]))
+                    else:
+                        new_person_data['values'].append(0)
+                
+                out_data['series'].append(new_person_data)
+
+            json.dump(out_data, outfile)
+
+        else:
+
+            # Write headers
+            outfile.write(f'date,{",".join(names)}\n')
+
+            # Write data
+            for key in sorted(alldates.keys()):
+                day_data = alldates[key]
+                out_people_data = ['0' if i not in day_data else str(day_data[i]) for i in range(len(names))]
+                outfile.write(f'{key},{",".join(out_people_data)}\n')
 
     print("Done exporting people data.")
 
+def exportPeopleData2(ps:list[osxphotos.PhotoInfo], outdir:str):
+    """
+    Export people data, except in a narrower, continous list of
+    names, dates and counts; file size is smaller, but there might
+    be more preprocessing
+    """
+    grouped = groupByNameAndDate(ps)
+
+    # Get all names
+    names = sorted(grouped.keys())
+    outfile_path = os.path.join(outdir, 'people_data2.csv')
+    with open(outfile_path, 'w') as outfile:
+        outfile.write('name,date,count\n')
+
+        for name in names:
+            for date in sorted(grouped[name].keys()):
+                outfile.write(f'{name},{date},{len(grouped[name][date])}\n')
 
 def exportBestDailyPhoto(ps_dated:dict[str,list[osxphotos.PhotoInfo]], outdir:str, export_photos:bool, export_score_threshold:float):
 
