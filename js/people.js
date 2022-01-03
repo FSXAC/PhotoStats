@@ -23,7 +23,7 @@ let g = {
     border_color: "#888",
     row_height: 20,
     bar_height: 16,
-    date_width: 1,
+    date_width: 4,
     grid_color: "#eee",
     name_margin: 140,
     padding: 0,
@@ -32,11 +32,12 @@ let g = {
     line_color_light: "#9ecae1",
     line_color_dark: "#084594",
     line_color_darker: "#000",
-    truncate_top_people: 12,
-    starting_date: "2020-01-01",
-    convolve_data: true,
-    convolution_size: 5,
-    draw_grid: false,
+    // truncate_top_people: 12,
+    starting_date: "2021-01-01",
+    convolve_data: false,
+    convolution_size: 3,
+    draw_hgrid: true,
+    draw_vgrid: false,
     show_name_count: true,
     right_align_names: true
 };
@@ -100,6 +101,9 @@ function startRender() {
         peopleData.series = peopleData.series.slice(0, g.truncate_top_people);
     }
 
+    // Filter out zero-valued series
+    peopleData.series = peopleData.series.filter(person => person.total > 0);
+
     // Perform convultion on data if it's enabled
     const halfConvSize = Math.floor(g.convolution_size / 2);
     if (g.convolve_data && g.convolution_size >= 3) {
@@ -148,22 +152,26 @@ function startRender() {
         p.translate(g.padding, g.padding);
 
         // Draw horizontal grid lines
-        p.stroke(g.grid_color);
-        for (let i = 0; i < people_size; i++) {
-            const y = mapDataIndexToScreenCoords(0, i).y;
-            p.line(0, y, p.width - 2 * g.padding, y);
-        }
+        if (g.draw_hgrid) {
+            p.stroke(g.grid_color);
+            for (let i = 0; i < people_size; i++) {
+                const y = mapDataIndexToScreenCoords(0, i).y;
+                p.line(0, y, p.width - 2 * g.padding, y);
+            }
 
-        p.noStroke();
-        p.fill(255, 150);
-        p.rect(0, 0, g.name_margin, p.height - 2 * g.padding);
+            p.noStroke();
+            p.fill(255, 150);
+            p.rect(0, 0, g.name_margin, p.height - 2 * g.padding);
+        }
         
         // Draw vertical grid lines
-        p.translate(g.name_margin, 0);
-        const dateIndices = getMonthStartDateIndices(peopleData.dates);
-        for (let i = 0; i < dateIndices.length; i++) {
-            const x = mapDataIndexToScreenCoords(dateIndices[i], 0).x;
-            p.line(x, 0, x, p.height - 2 * g.padding);
+        if (g.draw_vgrid) {
+            p.translate(g.name_margin, 0);
+            const dateIndices = getMonthStartDateIndices(peopleData.dates);
+            for (let i = 0; i < dateIndices.length; i++) {
+                const x = mapDataIndexToScreenCoords(dateIndices[i], 0).x;
+                p.line(x, 0, x, p.height - 2 * g.padding);
+            }
         }
 
         p.pop();
@@ -203,9 +211,19 @@ function startRender() {
         p.translate(g.padding + g.name_margin, g.padding);
 
         if (plotType === 'barcode') {
-            p.strokeWeight(1);
+
+            // Type of fill
+            if (g.date_width > 1) {
+                p.noStroke();
+            } else {
+                p.strokeWeight(1);
+            }
+
+            // Size
+            const dy = 0.5 * g.bar_height;
+
+            // Plot it
             for (let i = 0; i < people_size; i++) {
-                const name = peopleData.series[i].name;
                 const personData = peopleData.series[i].values;
 
                 for (let j = 0; j < personData.length; j++) {
@@ -215,11 +233,18 @@ function startRender() {
                     }
 
                     let plot_pos = mapDataIndexToScreenCoords(j, i);
-                    p.stroke(p.lerpColor(
+                
+                    const valueColor = p.lerpColor(
                         p.color(g.line_color_lighter), p.color(g.line_color_dark), p.constrain(
-                            p.map(Math.sqrt(value), 0, 5, 0, 1), 0, 1)));
-                    const dy = 0.5 * g.bar_height;
-                    p.line(plot_pos.x, plot_pos.y - dy, plot_pos.x, plot_pos.y + dy);
+                            p.map(Math.sqrt(value), 0, 5, 0, 1), 0, 1));
+
+                    if (g.date_width > 1) {
+                        p.fill(valueColor);
+                        p.rect(plot_pos.x, plot_pos.y - dy, g.date_width, g.bar_height);
+                    } else {
+                        p.stroke(valueColor);
+                        p.line(plot_pos.x, plot_pos.y - dy, plot_pos.x, plot_pos.y + dy);
+                    }
                 }
             }
         } else if (plotType === 'dot') {
@@ -266,9 +291,7 @@ function startRender() {
 
         p.draw = () => {
             drawBorder(p);
-            if (g.draw_grid) {
-                drawGrid(p);
-            }
+            drawGrid(p);
             plotPeopleData(p);
             drawNames(p);
         }
