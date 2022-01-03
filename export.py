@@ -182,16 +182,23 @@ def exportPeopleData(ps:list[osxphotos.PhotoInfo], outdir:str, startdate=None, s
             for name in names:
                 new_person_data = {
                     'name': name,
-                    'values': []
+                    'values': [],
+                    'total': 0
                 }
-
+                
+                datapoints = []
                 for date in dates:
                     if date in grouped[name]:
-                        new_person_data['values'].append(len(grouped[name][date]))
+                        datapoints.append(len(grouped[name][date]))
                     else:
-                        new_person_data['values'].append(0)
+                        datapoints.append(0)
                 
-                out_data['series'].append(new_person_data)
+                # Add to output list
+                out_data['series'].append({
+                    'name': name,
+                    'values': datapoints,
+                    'total': sum(datapoints)
+                })
 
             json.dump(out_data, outfile)
 

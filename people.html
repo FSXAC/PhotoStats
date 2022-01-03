@@ -11,8 +11,8 @@
 <style>
 body { padding-bottom: 3em; }
 #people-graph canvas {
-    margin-right: 1em;;
-    border: 1px solid red;
+    margin-right: 1em;
+    /* border: 1px solid red; */
 }
 #people-graph {
     box-shadow: rgba(0, 0, 0, 0.4) 0px 2px 4px, rgba(0, 0, 0, 0.3) 0px 7px 13px -3px, rgba(0, 0, 0, 0.2) 0px -3px 0px inset;
@@ -45,10 +45,10 @@ $(document).ready(() => {
         url: "outdata/people_data.json",
         success: function (data) {
             peopleData = data;
-            
-            let width = data.dates.length;
-            let height = data.series.length * 10;
-            // resizeCanvas(, );
+
+            // Sort by total
+            peopleData.series.sort((a, b) => (a.total < b.total) ? 1 : ((b.total < a.total) ? -1 : 0))
+
 
             console.log(data);
             startRender();
@@ -59,22 +59,34 @@ $(document).ready(() => {
 // Global properties
 const g = {
     bg_color: "#fff",
-    border_width: 1,
+    border_width: 0,
     border_color: "#888",
-    padding: 10,
-    dotsize: 5
+    row_height: 16,
+    date_width: 1/5,
+    grid_color: "#ccc",
+    name_margin: 140,
+    padding: 0,
+    dotsize: 5,
+    line_color_dark: "#000",
+    line_color_light: "#6baed6",
 };
 
 function calculateCanvasWidth(data_width) {
-    return data_width + 2 * (
+    return data_width * g.date_width + 2 * 
+    (g.border_width + g.padding) + g.name_margin;
+}
+
+function calculateCanvasHeight(data_height) {
+    return (data_height + 1) * g.row_height + 2 * (
         g.border_width + g.padding
     );
 }
 
-function calculateCanvasHeight(data_height) {
-    return data_height + 2 * (
-        g.border_width + g.padding
-    );
+function mapDataIndexToScreenCoords(date_index, person_index) {
+    return {
+        x: date_index * g.date_width,
+        y: g.row_height * (person_index + 1)
+    };
 }
 
 function startRender() {
@@ -84,28 +96,94 @@ function startRender() {
     console.log("Data loaded with " + date_size + " dates and " + people_size + " people");
 
     function drawBorder(p) {
-        p.stroke(g.border_color);
-        p.strokeWeight(1);
-        p.noFill();
-        p.rect(g.padding, g.padding, date_size, people_size);
+        // p.stroke(g.border_color);
+        // p.strokeWeight(1);
+        // p.noFill();
+        // p.rect(g.padding, g.padding, date_size, people_size);
     }
+
+    function drawGrid(p) {
+        p.push();
+        p.translate(g.padding, g.padding);
+
+        // Draw horizontal grid lines
+        p.stroke(g.grid_color);
+        for (let i = 0; i < peopleData.series.length; i++) {
+            const y = mapDataIndexToScreenCoords(0, i).y;
+            p.line(0, y, p.width - 2 * g.padding, y);
+        }
+        
+        p.noStroke();
+        p.fill(255, 150);
+        p.rect(0, 0, g.name_margin, p.height - 2 * g.padding);
+        
+        // Draw starting vertical line
+        p.stroke(g.grid_color);
+        p.line(g.name_margin, 0, g.name_margin, p.height - 2 * g.padding)
+
+        p.pop();   
+    }
+
+    function drawNames(p) {
+        p.push();
+        p.translate(g.padding, g.padding);
+        p.fill(0);
+        p.noStroke();
+        p.textAlign(p.LEFT, p.CENTER);
+        for (let i = 0; i < peopleData.series.length; i++) {
+            const name = peopleData.series[i].name + " (" + peopleData.series[i].total + ")";
+            p.text(name, g.padding, mapDataIndexToScreenCoords(0, i).y);
+        }
+        p.pop();
+    }
+
+    const plotType = 'barcode';
 
     function plotPeopleData(p) {
         p.push();
-        p.translate(g.padding, g.padding);
-        p.noStroke();
-        p.fill(0, 50);
-        for (let i = 0; i < peopleData.series.length; i++) {
-            const name = peopleData.series[i].name;
-            const personData = peopleData.series[i].values;
+        p.translate(g.padding + g.name_margin, g.padding);
 
-            for (let j = 0; j < personData.length; j++) {
-                if (personData[j] == 0) {
-                    continue;
+        if (plotType === 'barcode') {
+            p.strokeWeight(1);
+            for (let i = 0; i < peopleData.series.length; i++) {
+                const name = peopleData.series[i].name;
+                const personData = peopleData.series[i].values;
+
+                for (let j = 0; j < personData.length; j++) {
+                    const value = personData[j];
+                    if (value == 0) {
+                        continue;
+                    }
+
+                    let plot_pos = mapDataIndexToScreenCoords(j, i);
+                    p.stroke(p.lerpColor(
+                        p.color(g.line_color_light), p.color(g.line_color_dark), p.constrain(
+                            p.map(value, 0, 50, 0, 1), 0, 1)));
+                    const dy = 0.5 * g.row_height;
+                    p.line(plot_pos.x, plot_pos.y - dy, plot_pos.x, plot_pos.y + dy);
                 }
-                p.ellipse(j, i, g.dotsize, g.dotsize);
+            }
+        } else if (plotType === 'dot') {
+            p.noStroke();
+            p.blendMode(p.MULTIPLY);
+            p.fill(p.color(g.line_color_light), 10);
+            for (let i = 0; i < peopleData.series.length; i++) {
+                const name = peopleData.series[i].name;
+                const personData = peopleData.series[i].values;
+
+                for (let j = 0; j < personData.length; j++) {
+                    const value = personData[j];
+                    if (value == 0) {
+                        continue;
+                    }
+
+                    const plot_pos = mapDataIndexToScreenCoords(j, i);
+                    const size = g.dotsize + Math.log(value + 1);
+                    p.ellipse(plot_pos.x, plot_pos.y, size, size);
+                }
             }
         }
+        
         p.pop();
     }
 
@@ -130,6 +208,8 @@ function startRender() {
         p.draw = ()=> {
             drawBorder(p);
             plotPeopleData(p);
+            drawGrid(p);
+            drawNames(p);
         }
     }
 
