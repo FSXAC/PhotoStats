@@ -29,13 +29,14 @@ const g = {
     border_color: "#888",
     row_height: 16,
     date_width: 1 / 4,
-    grid_color: "#ccc",
+    grid_color: "#eee",
     name_margin: 140,
     padding: 0,
     dotsize: 5,
     line_color_dark: "#000",
     line_color_light: "#6baed6",
     truncate_top_people: 12,
+    starting_Date: "2020-01-01"
 };
 
 function calculateCanvasWidth(data_width) {
@@ -54,6 +55,18 @@ function mapDataIndexToScreenCoords(date_index, person_index) {
         x: date_index * g.date_width,
         y: g.row_height * (person_index + 1)
     };
+}
+
+// Returns a list of indices where date ends with "-01"
+function getMonthStartDateIndices(dates) {
+    outList = [];
+    for (let i = 0; i < dates.length; i++) {
+        if (dates[i].endsWith('-01')) {
+            outList.push(i);
+        }
+    }
+
+    return outList;
 }
 
 function startRender() {
@@ -88,6 +101,15 @@ function startRender() {
         // Draw starting vertical line
         p.stroke(g.grid_color);
         p.line(g.name_margin, 0, g.name_margin, p.height - 2 * g.padding)
+
+        
+        // Draw vertical grid lines
+        p.translate(g.name_margin, 0);
+        const dateIndices = getMonthStartDateIndices(peopleData.dates);
+        for (let i = 0; i < dateIndices.length; i++) {
+            const x = mapDataIndexToScreenCoords(dateIndices[i], 0).x;
+            p.line(x, 0, x, p.height - 2 * g.padding);
+        }
 
         p.pop();
     }
@@ -175,8 +197,8 @@ function startRender() {
 
         p.draw = () => {
             drawBorder(p);
-            plotPeopleData(p);
             drawGrid(p);
+            plotPeopleData(p);
             drawNames(p);
         }
     }
