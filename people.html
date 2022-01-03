@@ -10,6 +10,15 @@
 <link rel="stylesheet" href="css/main.css" />
 <style>
 body { padding-bottom: 3em; }
+#people-graph canvas {
+    margin-right: 1em;;
+    border: 1px solid red;
+}
+#people-graph {
+    box-shadow: rgba(0, 0, 0, 0.4) 0px 2px 4px, rgba(0, 0, 0, 0.3) 0px 7px 13px -3px, rgba(0, 0, 0, 0.2) 0px -3px 0px inset;
+    overflow-x: scroll;
+    padding: 2em 1em;
+}
 </style>
 </head>
 <body>
@@ -52,46 +61,75 @@ const g = {
     bg_color: "#fff",
     border_width: 1,
     border_color: "#888",
+    padding: 10,
     dotsize: 5
 };
 
+function calculateCanvasWidth(data_width) {
+    return data_width + 2 * (
+        g.border_width + g.padding
+    );
+}
+
+function calculateCanvasHeight(data_height) {
+    return data_height + 2 * (
+        g.border_width + g.padding
+    );
+}
+
 function startRender() {
-    // https://stackoverflow.com/questions/39711941/p5-js-manually-call-setup-and-draw
+
+    const date_size = peopleData.dates.length;
+    const people_size = peopleData.series.length;
+    console.log("Data loaded with " + date_size + " dates and " + people_size + " people");
+
+    function drawBorder(p) {
+        p.stroke(g.border_color);
+        p.strokeWeight(1);
+        p.noFill();
+        p.rect(g.padding, g.padding, date_size, people_size);
+    }
+
+    function plotPeopleData(p) {
+        p.push();
+        p.translate(g.padding, g.padding);
+        p.noStroke();
+        p.fill(0, 50);
+        for (let i = 0; i < peopleData.series.length; i++) {
+            const name = peopleData.series[i].name;
+            const personData = peopleData.series[i].values;
+
+            for (let j = 0; j < personData.length; j++) {
+                if (personData[j] == 0) {
+                    continue;
+                }
+                p.ellipse(j, i, g.dotsize, g.dotsize);
+            }
+        }
+        p.pop();
+    }
+
     const sketch = (p)=> {
 
         // Setup canvas size from data size
-        const date_size = peopleData.dates.length;
-        const people_size = peopleData.series.length;
-        console.log("Data loaded with " + date_size + " dates and " + people_size + " people");
-        
         p.setup = ()=> {
-
+            
             // Calculate canvas size based on config
-            const canvas_width = date_size + 2 * g.border_width;
-            const canvas_height = people_size + 2 * g.border_width;
+            const canvas_width = calculateCanvasWidth(date_size);
+            const canvas_height = calculateCanvasHeight(people_size);
+
             p.createCanvas(canvas_width, canvas_height);
             p.noLoop();
             
             // Draw border and clear screen
-            p.background(g.border_color);
-            p.fill(g.bg_color);
-            p.rect(1, 1, date_size, people_size);
+            p.background(g.bg_color);
+            
 
         }
-        p.draw = ()=> {
-            p.noStroke();
-            p.fill(0, 50);
-            for (let i = 0; i < peopleData.series.length; i++) {
-                const name = peopleData.series[i].name;
-                const personData = peopleData.series[i].values;
 
-                for (let j = 0; j < personData.length; j++) {
-                    if (personData[j] == 0) {
-                        continue;
-                    }
-                    p.ellipse(j, i, g.dotsize, g.dotsize);
-                }
-            }
+        p.draw = ()=> {
+            drawBorder(p);
+            plotPeopleData(p);
         }
     }
 
