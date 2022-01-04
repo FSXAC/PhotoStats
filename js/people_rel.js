@@ -17,7 +17,7 @@ function drawGraph(data) {
     }
 
     /* Handle when a mouse enters a chord */
-    function defaultOpacity(d, i) {
+    function mouseonChord(d, i) {
 
         //Decrease opacity to all
         svg.selectAll("path.chord")
@@ -72,22 +72,38 @@ function drawGraph(data) {
     }
 
     /* Remove zero-valued participants */
-    // function sumRowAndCol(index) {
-    //     let sum = 0;
-    //     for (let i = 0; i < n; i++) {
-    //         sum += matrix[index][i];
-    //         sum += matrix[i][index];
-    //     }
-    // }
-    // for (let i = 0; i < n; i++) {
-    //     const name = names[i];
-    //     if (sumRowAndCol(i) == 0) {
-    //         console.log(name + "has zero shared; removing from matrix");
-    //     }
-    // }
+    const threshold = 1;
+    function sumRowAndCol(index) {
+        let sum = 0;
+        for (let i = 0; i < n; i++) {
+            sum += matrix[index][i];
+            sum += matrix[i][index];
+        }
+        return sum
+    }
+    let toDelete = [];
+    for (let i = 0; i < n; i++) {
+        const name = names[i];
+        if (sumRowAndCol(i) <= threshold) {
+            console.log(name + " below threshold; removing from matrix");
+            toDelete.push(i);
+        }
+    }
+    for (let i = toDelete.length - 1; i >= 0; i--) {
+        toDeleteIndex = toDelete[i];
+        
+        /* Remove name */
+        names.splice(toDeleteIndex, 1);
 
-    /* Debug */
-    console.log(matrix);
+        /* Remove from matrix, first remove row, then column */
+        matrix.splice(toDeleteIndex, 1);
+        for (let r = 0; r < matrix.length; r++) {
+            matrix[r].splice(toDeleteIndex, 1);
+        }
+    }
+
+    /* Recompute variables */
+    n = names.length;
 
     /* Establish graph size */
     let margin = { left: 90, top: 90, right: 90, bottom: 90 };
@@ -131,11 +147,12 @@ function drawGraph(data) {
         .enter()
         .append("g")
         .attr("class", "group")
+        .attr('title', (d) => { console.log("index = " + d.index + ", sum=" + sumRowAndCol(d.index)) })
         .on("mouseover", fade(fadeOutOpacity))
         .on("mouseout", fade(defaultOpacity))
 
     // text popups
-    // .on("click", defaultOpacity)
+    // .on("click", mouseonChord)
     // .on("mouseout", mouseoutChord);
 
     outerArcs.append("path")
