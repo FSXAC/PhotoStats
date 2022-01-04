@@ -23,24 +23,71 @@
     crossorigin="anonymous"></script>
 <script>
     function drawGraph(data) {
-        // create the svg area
-        var svg = d3.select("#people-graph")
-            .append("svg")
-            .attr("width", 1000)
-            .attr("height", 1000)
-            .append("g")
-            .attr("transform", "translate(500,500)")
 
-        // create a matrix
-        // var matrix = [
-        //     [11, 58, 89, 28],
-        //     [51, 18, 20, 61],
-        //     [80, 145, 80, 85],
-        //     [103, 99, 40, 71]
-        // ];
+        /* Constants */
+        const defaultOpacity = 0.8;
+        const fadeOutOpacity = 0.0;
 
-        var matrix = data.data;
-        var names = data.names;
+        /* Helper functions (https://jsfiddle.net/rjonean4/) */
+
+        /* Handle fade animation on mouse over */
+        function fade(opacity) {
+            return function (d, i) {
+                svg.selectAll("path.chord")
+                    .filter(function (d) { return d.source.index != i && d.target.index != i; })
+                    .transition()
+                    .style("opacity", opacity);
+            };
+        }
+
+        /* Handle when a mouse enters a chord */
+        function mouseoverChord(d, i) {
+
+            //Decrease opacity to all
+            svg.selectAll("path.chord")
+                .transition()
+                .style("opacity", fadeOutOpacity);
+
+            //Show hovered over chord with full opacity
+            d3.select(this)
+                .transition()
+                .style("opacity", 1);
+
+            //Define and show the tooltip over the mouse location
+            $(this).popover({
+                //placement: 'auto top',
+                title: 'test',
+                placement: 'right',
+                container: 'body',
+                animation: false,
+                offset: "20px -100px",
+                followMouse: true,
+                trigger: 'click',
+                html: true,
+                content: function () {
+                    return "<p style='font-size: 11px; text-align: center;'><span style='font-weight:900'>" +
+                        "</span> text <span style='font-weight:900'>" +
+                        "</span> folgt hier <span style='font-weight:900'>" + "</span> movies </p>";
+                }
+            });
+            $(this).popover('show');
+        }
+
+        /* Handle when mouse leaves a chord; reset styles for all chords */
+        function mouseoutChord(d) {
+            //Hide the tooltip
+            $('.popover').each(function () {
+                $(this).remove();
+            })
+            //Set opacity back to default for all
+            svg.selectAll("path.chord")
+                .transition()
+                .style("opacity", defaultOpacity );
+        }
+
+        /* Pre-process the data */
+        let matrix = data.data;
+        let names = data.names;
         const n = names.length;
 
         // Remove diagonal (photos with oneself)
@@ -48,58 +95,83 @@
             matrix[i][i] = 0;
         }
 
+        /* Debug */
         console.log(matrix);
 
-        // give this matrix to d3.chord(): it will calculates all the info we need to draw arc and ribbon
-        var res = d3.chord()
-            .padAngle(0.03)
-            .sortSubgroups(d3.descending)
-            (matrix)
+        /* Establish graph size */
+        let margin = { left: 90, top: 90, right: 90, bottom: 90 };
+        let width = Math.min(window.innerWidth, 1000) - margin.left - margin.right;
+        let height = Math.min(window.innerWidth, 1000) - margin.top - margin.bottom;
+        let innerRadius = Math.min(width, height) * 0.4;
+        let outerRadius = innerRadius * 1.1;
 
-        // Add the links between groups
-        svg
-            .datum(res)
+        /* Create d3 colors */
+        let colors = d3.scaleOrdinal()
+            .domain(d3.range(names.length))
+            .range(["#084594"]);
+
+        /* Create chord */
+        let chords = d3.chord()
+            .padAngle(.03)
+            .sortChords(d3.descending);
+
+        /* Create arc that goes around the chord */
+        let arcs = d3.arc()
+            .innerRadius(innerRadius)
+            .outerRadius(outerRadius);
+
+        /* Create paths that connect the arcs / chords */
+        let paths = d3.ribbon()
+            .radius(innerRadius);
+
+        /* Create SVG area and apply matrix data to the chords */
+        var svg = d3.select("#people-graph")
+            .append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
             .append("g")
-            .selectAll("path")
-            .data(function (d) { return d; })
-            .enter()
-            .append("path")
-            .attr("d", d3.ribbon().radius(400))
-            .style("fill", "#2171b588")
-            // .style("stroke", "black");
-
-        // this group object use each group of the data.groups object
-        var group = svg
-            .datum(res)
-            .append("g")
-            .selectAll("g")
-            .data(function (d) { return d.groups; })
-            .enter()
-
-        console.log(group);
-
-        // add the group arcs on the outer part of the circle
-        group.append("g")
-            .append("path")
-            .style("fill", "#222222aa")
-            // .style("stroke", "black")
-            .attr("d", d3.arc()
-                .innerRadius(400)
-                .outerRadius(410)
-            )
-            .attr("id", function (d, i) { return "group" + d.index; })
+            .attr("transform", "translate(" + (width / 2 + margin.left) + "," + (height / 2 + margin.top) + ")")
+            .datum(chords(matrix));
         
-        group.append("text")
+        /* Draw outer arcs, grouped, with mouse interaction */
+        let outerArcs = svg.selectAll("g.group")
+            .data(function (chords) { return chords.groups; })
+            .enter()
+            .append("g")
+            .attr("class", "group")
+            .on("mouseover", fade(fadeOutOpacity))
+            .on("mouseout", fade(defaultOpacity))
+
+            // text popups
+            .on("click", mouseoverChord)
+            .on("mouseout", mouseoutChord);
+
+        outerArcs.append("path")
+            .style("fill", function (d) { return colors(d.index); })
+            .attr("id", function (d, i) { return "group" + d.index; })
+            .attr("d", arcs);
+
+        /* Draw text labelling the names outside of the arcs */
+        outerArcs.append("text")
             .each(function (d) { d.angle = (d.startAngle + d.endAngle) / 2; })
             .attr("dy", ".35em")
             .attr("class", "titles")
             .attr("text-anchor", function (d) { return d.angle > Math.PI ? "end" : null; })
             .attr("transform", function (d) {
                 return "rotate(" + (d.angle * 180 / Math.PI - 90) + ")"
-                    + "translate(" + (410 + 10) + ")"
+                    + "translate(" + (outerRadius + 10) + ")"
                     + (d.angle > Math.PI ? "rotate(180)" : "");
             })
             .text(function (d, i) { return names[i]; });
+
+        /* Draw the paths for inner chords */
+        svg.selectAll("path.chord")
+            .data(function (chords) { return chords; })
+            .enter().append("path")
+            .attr("class", "chord")
+            .style("fill", function (d) { return colors(d.source.index); })
+            .style("opacity", defaultOpacity)
+            .attr("d", paths);
     }
 
     $(document).ready(() => {
