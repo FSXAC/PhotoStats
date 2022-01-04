@@ -190,11 +190,6 @@ def exportPeopleRelationshipData(ps:list[osxphotos.PhotoInfo], names:list[str], 
                 index2 = names.index(persons[j])
                 data[index1][index2] += 1
 
-    # Complete the matrix by copying triangular matrix to lower triangle
-    for i in range(1, n):
-        for j in range(0, i):
-            data[i][j] = data[j][i]
-
     outdata = {
         'names': names,
         'data': data
