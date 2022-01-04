@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Apple Photos People Relationship Graph</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+<link rel="stylesheet" href="css/main.css" />
+<style>
+</style>
+</head>
+<body>
+<div class="container-fluid">
+    <div class="header-nav"></div>
+    <div id="people-graph"></div>
+</div>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.4.0/d3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
+    crossorigin="anonymous"></script>
+<script>
+    function drawGraph(data) {
+        // create the svg area
+        var svg = d3.select("#people-graph")
+            .append("svg")
+            .attr("width", 1000)
+            .attr("height", 1000)
+            .append("g")
+            .attr("transform", "translate(500,500)")
+
+        // create a matrix
+        // var matrix = [
+        //     [11, 58, 89, 28],
+        //     [51, 18, 20, 61],
+        //     [80, 145, 80, 85],
+        //     [103, 99, 40, 71]
+        // ];
+
+        var matrix = data.data;
+        var names = data.names;
+        const n = names.length;
+
+        // Remove diagonal (photos with oneself)
+        for (let i = 0; i < n; i++) {
+            matrix[i][i] = 0;
+        }
+
+        console.log(matrix);
+
+        // give this matrix to d3.chord(): it will calculates all the info we need to draw arc and ribbon
+        var res = d3.chord()
+            .padAngle(0.03)
+            .sortSubgroups(d3.descending)
+            (matrix)
+
+        // Add the links between groups
+        svg
+            .datum(res)
+            .append("g")
+            .selectAll("path")
+            .data(function (d) { return d; })
+            .enter()
+            .append("path")
+            .attr("d", d3.ribbon().radius(400))
+            .style("fill", "#2171b588")
+            // .style("stroke", "black");
+
+        // this group object use each group of the data.groups object
+        var group = svg
+            .datum(res)
+            .append("g")
+            .selectAll("g")
+            .data(function (d) { return d.groups; })
+            .enter()
+
+        console.log(group);
+
+        // add the group arcs on the outer part of the circle
+        group.append("g")
+            .append("path")
+            .style("fill", "#222222aa")
+            // .style("stroke", "black")
+            .attr("d", d3.arc()
+                .innerRadius(400)
+                .outerRadius(410)
+            )
+            .attr("id", function (d, i) { return "group" + d.index; })
+        
+        group.append("text")
+            .each(function (d) { d.angle = (d.startAngle + d.endAngle) / 2; })
+            .attr("dy", ".35em")
+            .attr("class", "titles")
+            .attr("text-anchor", function (d) { return d.angle > Math.PI ? "end" : null; })
+            .attr("transform", function (d) {
+                return "rotate(" + (d.angle * 180 / Math.PI - 90) + ")"
+                    + "translate(" + (410 + 10) + ")"
+                    + (d.angle > Math.PI ? "rotate(180)" : "");
+            })
+            .text(function (d, i) { return names[i]; });
+    }
+
+    $(document).ready(() => {
+
+        // Load nav
+        $('.header-nav').load('navigation.html', () => {
+            $('#nav-people-rel').addClass('active');
+        });
+        
+        // Load datafile
+        $.ajax({
+            type: "GET",
+            url: "outdata/people_rel.json",
+            success: function (data) {
+                drawGraph(data);
+            }
+        });
+    });
+</script>
+</body>
+</html>
