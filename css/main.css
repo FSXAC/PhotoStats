@@ -9,6 +9,10 @@
   margin-bottom: .5em;
 }
 
+.nav-item {
+  width: 100px;
+}
+
 a.nav-link img {
   width: 64px;
   border-radius: 50%;
@@ -17,6 +21,7 @@ a.nav-link img {
   transition-property: filter, -webkit-filter, opacity;
   transition-duration: 0.3s;
   transition-timing-function: ease-out;
+  border: 1px solid #444;
 }
 
 a.nav-link span {
@@ -24,6 +29,7 @@ a.nav-link span {
   color: initial;
   opacity: 0.3;
   margin-top: .5em;
+  line-height: 1.0;
 }
 
 a.nav-link.active span {

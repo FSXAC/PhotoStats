@@ -32,12 +32,12 @@ let g = {
     line_color_light: "#9ecae1",
     line_color_dark: "#084594",
     line_color_darker: "#000",
-    // truncate_top_people: 12,
+    truncate_top_people: 10,
     starting_date: "2021-01-01",
     convolve_data: false,
-    convolution_size: 3,
+    convolution_size: 10,
     draw_hgrid: true,
-    draw_vgrid: false,
+    draw_vgrid: true,
     show_name_count: true,
     right_align_names: true
 };
@@ -166,6 +166,8 @@ function startRender() {
         
         // Draw vertical grid lines
         if (g.draw_vgrid) {
+            p.stroke(g.grid_color);
+            p.noFill();
             p.translate(g.name_margin, 0);
             const dateIndices = getMonthStartDateIndices(peopleData.dates);
             for (let i = 0; i < dateIndices.length; i++) {
@@ -236,7 +238,7 @@ function startRender() {
                 
                     const valueColor = p.lerpColor(
                         p.color(g.line_color_lighter), p.color(g.line_color_dark), p.constrain(
-                            p.map(Math.sqrt(value), 0, 5, 0, 1), 0, 1));
+                            p.map(value, 0, 20, 0, 1), 0, 1));
 
                     if (g.date_width > 1) {
                         p.fill(valueColor);
@@ -284,7 +286,7 @@ function startRender() {
             p.noLoop();
 
             // Draw border and clear screen
-            p.background(g.bg_color);
+            // p.background(g.bg_color);
 
 
         }
