@@ -14,6 +14,7 @@ EXPORT_TYPE_GPS_COORDS = 'gps'
 EXPORT_TYPE_CALENDAR_HEATMAP = 'calendar'
 EXPORT_TYPE_CALENDAR_BEST = 'calendar_best'
 EXPORT_TYPE_PEOPLE = 'people'
+EXPORT_TYPE_PEOPLE_REL = 'people_relationship'
 EXPORT_TYPE_BEST_DAILY = 'best_daily'
 
 EXPORT_TYPES = [
@@ -21,6 +22,7 @@ EXPORT_TYPES = [
     EXPORT_TYPE_CALENDAR_HEATMAP,
     EXPORT_TYPE_CALENDAR_BEST,
     EXPORT_TYPE_PEOPLE,
+    EXPORT_TYPE_PEOPLE_REL,
     EXPORT_TYPE_BEST_DAILY,
     'all'
 ]
@@ -66,7 +68,7 @@ def exportGPS(ps:list[osxphotos.PhotoInfo], outdir:str, precision:int=5):
     1.1 meters
     """
 
-    if checkSkippable(outdir, 'gps'):
+    if checkSkippable(outdir, EXPORT_TYPE_GPS_COORDS):
         print('Photos library did not change; skipping GPS data export')
         return
 
@@ -101,7 +103,7 @@ def exportCalendarHeatmap(ps_dated:dict[str,list[osxphotos.PhotoInfo]], outdir:s
     photos taken on that day, this csv file will be used in the web view
     """
 
-    if checkSkippable(outdir, 'calendar_heatmap'):
+    if checkSkippable(outdir, EXPORT_TYPE_CALENDAR_HEATMAP):
         print('Photos library did not change; skipping calendar heatmap data export')
         return
 
@@ -117,7 +119,7 @@ def exportCalendarHeatmap(ps_dated:dict[str,list[osxphotos.PhotoInfo]], outdir:s
 
 
 def exportPeopleData(ps:list[osxphotos.PhotoInfo], outdir:str):
-    if checkSkippable(outdir, 'people'):
+    if checkSkippable(outdir, EXPORT_TYPE_PEOPLE):
         print('Photos library did not change; skipping people data export')
         return
 
@@ -133,13 +135,10 @@ def exportPeopleData(ps:list[osxphotos.PhotoInfo], outdir:str):
     }
     
     for name in grouped:
-        # dates = sorted([timeline.index(date) for date in grouped[name]])
-        # counts = sorted([len(grouped[name][date]) for date in grouped[name]])
         counts = [len(grouped[name][t]) if t in grouped[name] else 0 for t in timeline]
         print(counts)
         outdata['series'].append({
             'name': name,
-            # 'dateindex': dates,
             'counts': counts,
             'total': sum(counts)
         })
@@ -152,9 +151,62 @@ def exportPeopleData(ps:list[osxphotos.PhotoInfo], outdir:str):
     
     print("Done exporting people data.")
 
+def exportPeopleRelationshipData(ps:list[osxphotos.PhotoInfo], names:list[str], outdir:str):
+    """
+    Export people-people group photo data
+    Where data is a MxM matirx where M is the number of people
+
+    First argument is a list of photos
+    Second argument is a list sorted names
+        this can be acquierd from the pd object
+    """
+
+    # if checkSkippable(outdir, EXPORT_TYPE_PEOPLE_REL):
+    #     print('Photos library did not change; skipping people relationship data export')
+    #     return
+
+    # Filter names
+    unknown_name = '_UNKNOWN_'
+    names = list(filter(lambda name: name != unknown_name, names))
+
+    # Set output
+    outfile_path = os.path.join(outdir, 'people_rel.json')
+    print(f'Exporting people-relationship data to {outfile_path}')
+    
+    # Filter out all photos that doesn't have face AND not '_UNKNOWN_'
+    ps_filtered = list(filter(lambda photo: len(photo.persons) > 1 or (len(photo.persons) == 1 and unknown_name not in photo.persons), ps))
+    print(f'There are {len(ps_filtered)}/{len(ps)} photos that have >= 1 known person in it')
+
+    # Build 2D data matrix
+    n = len(names)
+    data = [[0] * n for i in range(n)]
+
+    # Go through all the photos and populate the data matrix
+    for p in ps:
+        persons = list(filter(lambda name: name != unknown_name, p.persons))
+        for i, person in enumerate(persons):
+            index1 = names.index(person)
+            for j in range(i, len(persons)):
+                index2 = names.index(persons[j])
+                data[index1][index2] += 1
+
+    # Complete the matrix by copying triangular matrix to lower triangle
+    for i in range(1, n):
+        for j in range(0, i):
+            data[i][j] = data[j][i]
+
+    outdata = {
+        'names': names,
+        'data': data
+    }
+
+    with open(outfile_path, 'w') as outfile:
+        json.dump(outdata, outfile)
+
+
 def exportBestDailyPhoto(ps_dated:dict[str,list[osxphotos.PhotoInfo]], outdir:str, export_photos:bool, export_score_threshold:float):
 
-    if checkSkippable(outdir, 'best_daily'):
+    if checkSkippable(outdir, EXPORT_TYPE_BEST_DAILY):
         print('Photos library did not change; skipping best daily photo export')
         return
 

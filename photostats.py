@@ -118,6 +118,9 @@ def main():
     if args.export in ['all', EXPORT_TYPE_BEST_DAILY]:
         exportBestDailyPhoto(ps_dated, args.outdir, export_photos=False, export_score_threshold=args.best_photo_score_thres)
 
+    if args.export in ['all', EXPORT_TYPE_PEOPLE_REL]:
+        exportPeopleRelationshipData(ps, sorted(pd.persons), args.outdir)
+
     if args.serve:
         with socketserver.TCPServer(('', 8000), http.server.SimpleHTTPRequestHandler) as httpd:
             print('Serving at http://localhost:8000')
