@@ -83,15 +83,13 @@ def main():
     pd = osxphotos.PhotosDB(args.library)
     ps = pd.photos()
 
-    video_exts = ['mov', 'mp4', 'avi', 'mpg', 'mpeg', 'gif']
-
     if args.only_videos:
         len_prev = len(ps)
-        ps = list(filter(lambda photo: photo.original_filename.split('.')[-1].lower() in video_exts, ps))
+        ps = list(filter(lambda photo: photo.ismovie, ps))
         print(f'Filtering for only videos; number of items went from {len_prev} to {len(ps)}')
     elif not args.include_videos:
         len_prev = len(ps)
-        ps = list(filter(lambda photo: photo.original_filename.split('.')[-1].lower() not in video_exts, ps))
+        ps = list(filter(lambda photo: not photo.ismovie, ps))
         print(f'Filtering videos; number of items went from {len_prev} to {len(ps)}')
 
 

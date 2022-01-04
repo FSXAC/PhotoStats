@@ -13,4 +13,5 @@ outdata/metadata.json
 outdata/best_daily.csv
 outdata/best_daily/*
 outdata/people_data.json
+outdata/people.json
 outdata/calendar_heatmap.csv
