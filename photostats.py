@@ -77,9 +77,6 @@ def main():
     with open(metadata_filepath, 'w') as metadata_outfile:
         json.dump(metadata, metadata_outfile)
 
-    # TEMP
-    # return
-
     pd = osxphotos.PhotosDB(args.library)
     ps = pd.photos()
 
