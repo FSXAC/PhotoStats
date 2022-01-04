@@ -8,7 +8,7 @@ $(document).ready(() => {
 
     $.ajax({
         type: "GET",
-        url: "outdata/people.json",
+        url: "outdata/people_data.json",
         success: function (data) {
             peopleData = data;
             startRender();
@@ -75,10 +75,7 @@ function getMonthStartDateIndices(dates) {
 function startRender() {
 
     // Filter data that's before a start date
-    if (g.starting_date) {
-        for (let i = 0; i < peopleData)
-
-        // If specified starting date, try to find an index to truncate the date series
+    if (g.starting_date) {        // If specified starting date, try to find an index to truncate the date series
         const startIndex = peopleData.dates.indexOf(g.starting_date);
 
         if (startIndex != -1) {
@@ -140,7 +137,6 @@ function startRender() {
     const people_size = peopleData.series.length;
 
     console.log("Data loaded with " + date_size + " dates and " + people_size + " people");
-    return;
 
     function drawBorder(p) {
         // p.stroke(g.border_color);
