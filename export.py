@@ -190,6 +190,13 @@ def exportPeopleRelationshipData(ps:list[osxphotos.PhotoInfo], names:list[str], 
                 index2 = names.index(persons[j])
                 data[index1][index2] += 1
 
+    # Consolidate and fix the matrix to make sure it's symmetrical diagonally
+    for i in range(n):
+        for j in range(i, n):
+            if i == j:
+                continue
+            data[j][i] = data[i][j] = data[j][i] + data[i][j]
+
     outdata = {
         'names': names,
         'data': data
