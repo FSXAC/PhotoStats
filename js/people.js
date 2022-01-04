@@ -8,7 +8,7 @@ $(document).ready(() => {
 
     $.ajax({
         type: "GET",
-        url: "outdata/people_data.json",
+        url: "outdata/people.json",
         success: function (data) {
             peopleData = data;
             startRender();
@@ -76,22 +76,23 @@ function startRender() {
 
     // Filter data that's before a start date
     if (g.starting_date) {        // If specified starting date, try to find an index to truncate the date series
-        const startIndex = peopleData.dates.indexOf(g.starting_date);
+        const startIndex = peopleData.timeline.indexOf(g.starting_date);
 
         if (startIndex != -1) {
-            peopleData.dates = peopleData.dates.slice(startIndex, peopleData.dates.length);
+            peopleData.timeline = peopleData.timeline.slice(startIndex, peopleData.timeline.length);
 
             // Do the same for all person data (since parallel arrays)
             for (let j = 0; j < peopleData.series.length; j++) {
-                peopleData.series[j].values = peopleData.series[j].values.slice(startIndex, peopleData.series[j].values.length);
+                peopleData.series[j].counts = peopleData.series[j].counts.slice(startIndex, peopleData.series[j].counts.length);
 
                 // Update sum
-                peopleData.series[j].total = peopleData.series[j].values.reduce((a, b) => a + b, 0);
+                peopleData.series[j].total = peopleData.series[j].counts.reduce((a, b) => a + b, 0);
             }
         }
     }
 
     // Sort by total
+    console.log(peopleData);
     peopleData.series.sort((a, b) => (a.total < b.total) ? 1 : ((b.total < a.total) ? -1 : 0));
 
     // Filter / truncate data from top people
@@ -106,7 +107,7 @@ function startRender() {
     const halfConvSize = Math.floor(g.convolution_size / 2);
     if (g.convolve_data && g.convolution_size >= 3) {
         for (let i = 0; i < peopleData.series.length; i++) {
-            const valuesLength = peopleData.series[i].values.length;
+            const valuesLength = peopleData.series[i].counts.length;
             let newValues = Array(valuesLength);
 
             for (let j = 0; j < valuesLength; j++) {
@@ -118,14 +119,14 @@ function startRender() {
                     if (k < 0 || k >= valuesLength ) {
                         continue;
                     }
-                    sum += peopleData.series[i].values[k];
+                    sum += peopleData.series[i].counts[k];
                 }
 
                 newValues[j] = sum / g.convolution_size;
             }
 
             // replace array
-            peopleData.series[i].values = newValues;
+            peopleData.series[i].counts = newValues;
         }
     }
 
@@ -133,7 +134,7 @@ function startRender() {
 
     // DONE processing data
 
-    const date_size = peopleData.dates.length;
+    const date_size = peopleData.timeline.length;
     const people_size = peopleData.series.length;
 
     console.log("Data loaded with " + date_size + " dates and " + people_size + " people");
@@ -167,7 +168,7 @@ function startRender() {
             p.stroke(g.grid_color);
             p.noFill();
             p.translate(g.name_margin, 0);
-            const dateIndices = getMonthStartDateIndices(peopleData.dates);
+            const dateIndices = getMonthStartDateIndices(peopleData.timeline);
             for (let i = 0; i < dateIndices.length; i++) {
                 const x = mapDataIndexToScreenCoords(dateIndices[i], 0).x;
                 p.line(x, 0, x, p.height - 2 * g.padding);
@@ -224,7 +225,7 @@ function startRender() {
 
             // Plot it
             for (let i = 0; i < people_size; i++) {
-                const personData = peopleData.series[i].values;
+                const personData = peopleData.series[i].counts;
 
                 for (let j = 0; j < personData.length; j++) {
                     const value = personData[j];
@@ -253,7 +254,7 @@ function startRender() {
             p.fill(p.color(g.line_color_light), 10);
             for (let i = 0; i < people_size; i++) {
                 const name = peopleData.series[i].name;
-                const personData = peopleData.series[i].values;
+                const personData = peopleData.series[i].counts;
 
                 for (let j = 0; j < personData.length; j++) {
                     const value = personData[j];

@@ -117,17 +117,32 @@ def exportCalendarHeatmap(ps_dated:dict[str,list[osxphotos.PhotoInfo]], outdir:s
 
 
 def exportPeopleData(ps:list[osxphotos.PhotoInfo], outdir:str):
+    if checkSkippable(outdir, 'people'):
+        print('Photos library did not change; skipping people data export')
+        return
+
     grouped = groupByNameAndDate(ps)
+
+    ds = sorted(list(set([date for named_list in grouped.values() for date in named_list])))
+    start = datetime.strptime(ds[0], '%Y-%m-%d')
+    end = datetime.strptime(ds[-1], '%Y-%m-%d')
+    timeline = [(start + timedelta(days=x)).strftime('%Y-%m-%d') for x in range(0, (end - start).days + 1)]
+    outdata = {
+        'timeline': timeline,
+        'series': list()
+    }
     
-    # outdata = { "timeline": , "series": dict() }
     for name in grouped:
-        dates = sorted([date for date in grouped[name]])
-        counts = sorted([len(grouped[name][date]) for date in grouped[name]])
-        outdata[name] = {
-            'dates': dates,
+        # dates = sorted([timeline.index(date) for date in grouped[name]])
+        # counts = sorted([len(grouped[name][date]) for date in grouped[name]])
+        counts = [len(grouped[name][t]) if t in grouped[name] else 0 for t in timeline]
+        print(counts)
+        outdata['series'].append({
+            'name': name,
+            # 'dateindex': dates,
             'counts': counts,
             'total': sum(counts)
-        }
+        })
 
     # Write to file
     outfile_path = os.path.join(outdir, 'people.json')
