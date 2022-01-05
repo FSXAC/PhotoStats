@@ -16,6 +16,7 @@ EXPORT_TYPE_CALENDAR_BEST = 'calendar_best'
 EXPORT_TYPE_PEOPLE = 'people'
 EXPORT_TYPE_PEOPLE_REL = 'people_relationship'
 EXPORT_TYPE_BEST_DAILY = 'best_daily'
+EXPORT_TYPE_INTERESTING_STATS = 'stats'
 
 EXPORT_TYPES = [
     EXPORT_TYPE_GPS_COORDS,
@@ -24,6 +25,7 @@ EXPORT_TYPES = [
     EXPORT_TYPE_PEOPLE,
     EXPORT_TYPE_PEOPLE_REL,
     EXPORT_TYPE_BEST_DAILY,
+    EXPORT_TYPE_INTERESTING_STATS,
     'all'
 ]
 
@@ -60,6 +62,59 @@ def checkSkippable(outdir:str, type:str):
         # This shouldn't happen because a metadata file should've been populated at init time
         print("Error: missing metadata file")
         sys.exit(1)
+
+def exportInterestingData(pd:osxphotos.PhotosDB, outdir:str):
+    """
+    Export all kinds of statistical data, useful for creating things
+    similar to Spotify-wrapped
+    """
+
+    data = dict()
+
+    # Get a new list of photos
+    ps = pd.photos()
+    data['num_photos'] = len(ps)
+    data["total_size_mbyte"] = round(sum([p.original_filesize for p in ps]) / 1e6, 1)
+
+    # Persons stats (pd.persons_as_dict should be sorted already)
+    data['num_persons'] = len(pd.persons) - 1
+    persons_dict = pd.persons_as_dict
+    persons_dict.pop('_UNKNOWN_')
+    data['num_faces_tagged'] = sum([persons_dict[n] for n in persons_dict])
+    top_5_persons = list(persons_dict.keys())[:5]
+    data['top_5_persons'] = top_5_persons
+    data['top_5_persons_count'] = [persons_dict[n] for n in top_5_persons]
+
+    # Movies stats
+    movies = list(filter(lambda p: p.ismovie, ps))
+    data['num_movies'] = len(movies)
+    movies_duration = [m.exif_info.duration if m.exif_info.duration else 0 for m in movies]
+    data["total_movies_duration_seconds"] = round(sum(movies_duration))
+    data["max_movie_duration_seconds"] = round(max(movies_duration))
+    
+
+    # Hidden stats
+    hiddens = list(filter(lambda p: p.hidden, ps))
+    data['num_hidden'] = len(hiddens)
+    data["total_size_hidden_mbyte"] = round(sum([p.original_filesize for p in hiddens]) / 1e6, 1)
+
+    # Selfies
+    selfies = list(filter(lambda p: p.selfie, ps))
+    data['num_selfies'] = len(selfies)
+
+    # Screenshots
+    screenshots = list(filter(lambda p: p.screenshot, ps))
+    data['num_screenshots'] = len(screenshots)
+
+    # Object detection labels
+    labels = pd.labels_as_dict
+    data['labels'] = list(labels.keys())
+
+    # Output
+    outfile_path = os.path.join(outdir, 'stats.json')
+    with open(outfile_path, 'w') as outfile:
+        json.dump(data, outfile)
+
 
 def exportGPS(ps:list[osxphotos.PhotoInfo], outdir:str, precision:int=5):
     """

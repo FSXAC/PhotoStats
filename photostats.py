@@ -103,6 +103,9 @@ def main():
     # Create date-grouped photo lists
     ps_dated = groupByDate(ps)
 
+    if args.export in ['all', EXPORT_TYPE_INTERESTING_STATS]:
+        exportInterestingData(pd, args.outdir)
+
     if args.export in ['all', EXPORT_TYPE_GPS_COORDS]:
         exportGPS(ps, args.outdir, args.gps_precision)
 

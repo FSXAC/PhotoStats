@@ -16,3 +16,6 @@ outdata/people_data.json
 outdata/people.json
 outdata/people_rel.json
 outdata/calendar_heatmap.csv
+outdata/stats.json
+export.py
+
