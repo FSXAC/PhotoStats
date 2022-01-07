@@ -1,4 +1,4 @@
-function drawGraph(data) {
+function drawGraph(data, threshold) {
 
     /* Constants */
     const defaultOpacity = 0.75;
@@ -72,7 +72,6 @@ function drawGraph(data) {
     }
 
     /* Remove zero-valued participants */
-    const threshold = 1;
     function sumRowAndCol(index) {
         let sum = 0;
         for (let i = 0; i < n; i++) {

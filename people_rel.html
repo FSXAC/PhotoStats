@@ -18,6 +18,12 @@
 <body>
 <div class="container-fluid">
     <div class="header-nav"></div>
+    <div class="container" style="text-align: center;">
+        <label for="threshold-slider">Threshold</label>
+        <input id="threshold-slider" type="range" value="1" min="0" max="100" oninput="this.nextElementSibling.value = this.value">
+        <output>1</output>
+        <button onclick="refresh()">Refresh</button>
+    </div>
     <div id="people-graph"></div>
 </div>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
@@ -27,22 +33,37 @@
     crossorigin="anonymous"></script>
 <script src="js/people_rel.js"></script>
 <script>
-    $(document).ready(() => {
+let g_data;
+let threshold = 1;
 
-        // Load nav
-        $('.header-nav').load('navigation.html', () => {
-            $('#nav-people-rel').addClass('active');
-        });
-        
-        // Load datafile
-        $.ajax({
-            type: "GET",
-            url: "outdata/people_rel.json",
-            success: function (data) {
-                drawGraph(data);
-            }
-        });
+function refresh() {
+    threshold = document.getElementById("threshold-slider").value;
+    document.getElementById("people-graph").innerHTML = "";
+
+    // Note: make a copy
+    drawGraph(JSON.parse(JSON.stringify(g_data)), threshold);
+}
+
+
+$(document).ready(() => {
+
+    // Load nav
+    $('.header-nav').load('navigation.html', () => {
+        $('#nav-people-rel').addClass('active');
     });
+    
+    // Load datafile
+    $.ajax({
+        type: "GET",
+        url: "outdata/people_rel.json",
+        success: function (data) {
+
+            // Copy reference to g_data
+            g_data = data;
+            refresh();
+        }
+    });
+});
 </script>
 </body>
 </html>
