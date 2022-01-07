@@ -9,11 +9,36 @@
     integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
 <link rel="stylesheet" href="css/main.css" />
 <style>
+#stats-container hr { margin: 4em 0; }
+#stats-container span { font-weight: bold; }
 </style>
 </head>
 <body>
 <div class="container-fluid">
     <div class="header-nav"></div>
+</div>
+<div class="container mb-5" id="stats-container" style="text-align: center;">
+<h1 class="display-1">📸</h1>
+<h1>There are <span id="num-total">0</span> photos and videos in your Apple Photos library.</h1>
+<h2>Of which, <span id="num-photos">0</span> are photos, and <span id="num-videos">0</span> are videos.</h2>
+<h3>All totals up to <span id="total_size">0</span>&nbsp;<span id="total_size_unit"></span> of data.
+That's equivalent to <span id="total_size_equiv">0</span>&nbsp;<span id="total_size_equiv_unit">CDs</span>.</h3>
+<hr>
+<h1 class="display-1">📹</h1>
+<h2>All the videos accounts for <span class="total_video_size">0</span>&nbsp;<span class="total_video_size_unit">GB</span>, or <span class="total_video_duration">0 s</span> long.</h2>
+<h3>The longest video is <span class="longest_video_duration">0 s</span>&nbsp;long.</h3>
+<hr>
+<h1 class="display-1">🤳</h1>
+<h2>There are <span id="num-screenshots">0</span> screenshots and <span id="num-selfies">0</span> selfies.</h2>
+<hr>
+<h1 class="display-1">🤫</h1>
+<h2><span id="num-hiddens">0</span> photos or videos are hidden</hh2>
+<h3>Occupying <span id="total_hidden_size">0</span>&nbsp;<span id="total_hidden_size_unit">B</span> of space.</h3>
+<hr>
+<h2>There are <span class="num_faces_tagged">0</span> faces tagged for <span class="num_faces">0</span> different persons</h2>
+<h3>Top <span class="num_top_persons">5</span> persons are:</h3>
+<ol class="top-persons-list"></ol>
+<h3>The top <span class="num_top_persons">5</span> accounts for <span class="top_persons_percentage">0</span>% of all tagged faces.</h3>
 </div>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.4.0/d3.min.js"></script>
@@ -21,6 +46,21 @@
     integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
     crossorigin="anonymous"></script>
 <script>
+    // https://stackoverflow.com/questions/36098913/convert-seconds-to-days-hours-minutes-and-seconds
+    function secondsToDhms(seconds) {
+        seconds = Number(seconds);
+        var d = Math.floor(seconds / (3600 * 24));
+        var h = Math.floor(seconds % (3600 * 24) / 3600);
+        var m = Math.floor(seconds % 3600 / 60);
+        var s = Math.floor(seconds % 60);
+
+        var dDisplay = d > 0 ? d + (d == 1 ? " day, " : " days, ") : "";
+        var hDisplay = h > 0 ? h + (h == 1 ? " hr, " : " hrs, ") : "";
+        var mDisplay = m > 0 ? m + (m == 1 ? " min, " : " mins, ") : "";
+        var sDisplay = s > 0 ? s + " s" : "";
+        return dDisplay + hDisplay + mDisplay + sDisplay;
+    }
+
     $(document).ready(() => {
         // Load nav
         $('.header-nav').load('navigation.html', () => {
@@ -28,14 +68,61 @@
         });
         
         // Load datafile
-        // $.ajax({
-        //     type: "GET",
-        //     url: "outdata/people_rel.json",
-        //     success: function (data) {
-        //         drawGraph(data);
-        //     }
-        // });
+        $.ajax({
+            type: "GET",
+            url: "outdata/stats.json",
+            success: function (data) {
+                populateData(data);
+            }
+        });
     });
+
+    function s(id, txt) {
+        $(id).text(txt.toLocaleString());
+    }
+
+    function populateData(data) {
+        console.log((data));
+        s('#num-total', data.num_photos + data.num_movies);
+        s('#num-photos', data.num_photos);
+        s('#num-videos', data.num_movies);
+
+        const total_size_mb = data.total_size_mbyte;
+        if (total_size_mb > 10e3) {
+            s('#total_size', (total_size_mb / 1000).toFixed(1));
+            s('#total_size_unit', 'GB');
+            s('#total_size_equiv', Math.round(total_size_mb / 4700));
+            s('#total_size_equiv_unit', 'DVDs');
+        } else {
+            s('#total_size', total_size_mb.toFixed(1));
+            s('#total_size_unit', 'MB');
+            s('#total_size_equiv', Math.round(total_size_mb / 700));
+        }
+
+        s('.total_video_size', (data.total_movies_size_mbyte / 1000).toFixed(1).toLocaleString());
+        s('.total_video_size_unit', 'GB');
+        s('.total_video_duration', secondsToDhms(data.total_movies_duration_seconds));
+        s('.longest_video_duration', secondsToDhms(data.max_movie_duration_seconds));
+
+        s("#num-screenshots", data.num_screenshots);
+        s("#num-selfies", data.num_selfies);
+        s("#num-hiddens", data.num_hidden);
+        s("#total_hidden_size", (data.total_size_hidden_mbyte / 1000).toFixed(1));
+        s('#total_hidden_size_unit', 'GB')
+
+        s('.num_faces_tagged', data.num_faces_tagged);
+        s('.num_faces', data.num_persons);
+        const top_persons_len = data.top_5_persons.length
+        s(".num_top_persons", top_persons_len);
+        let sum_tagged = 0;
+        for (let i = 0; i < top_persons_len; i++) {
+            let num_person_tagged = data.top_5_persons_count[i];
+            sum_tagged += num_person_tagged;
+            $(".top-persons-list").append(`<li><strong>${data.top_5_persons[i]}</strong>:&nbsp${num_person_tagged.toLocaleString()}</li>`);
+        }
+
+        s('.top_persons_percentage', (sum_tagged / data.num_faces_tagged * 100).toFixed(1));
+    }
 </script>
 </body>
 </html>

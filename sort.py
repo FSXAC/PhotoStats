@@ -13,7 +13,7 @@ def sortByScoreAttribute(ps:list[osxphotos.PhotoInfo], attr:str='overall'):
 
     return sorted(ps, key=lambda photo: getattr(photo.score, attr), reverse=True)
 
-def groupByDate(ps:list[osxphotos.PhotoInfo]):
+def groupByDate(ps:list[osxphotos.PhotoInfo], date_format='%Y-%m-%d'):
     """
     Groups photos by date and returns a dict where the key is the
     date, and the object is a list of photos taken on that date
@@ -21,7 +21,7 @@ def groupByDate(ps:list[osxphotos.PhotoInfo]):
 
     calendar_group = {}
     for photo in ps:
-        key = photo.date.strftime('%Y-%m-%d')
+        key = photo.date.strftime(date_format)
 
         if key not in calendar_group:
             calendar_group[key] = [photo]

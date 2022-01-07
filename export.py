@@ -81,7 +81,9 @@ def exportInterestingData(pd:osxphotos.PhotosDB, outdir:str):
     persons_dict = pd.persons_as_dict
     persons_dict.pop('_UNKNOWN_')
     data['num_faces_tagged'] = sum([persons_dict[n] for n in persons_dict])
-    top_5_persons = list(persons_dict.keys())[:5]
+    persons_names = list(persons_dict.keys())
+    top_nums = min(len(persons_names), 5)
+    top_5_persons = persons_names[:top_nums]
     data['top_5_persons'] = top_5_persons
     data['top_5_persons_count'] = [persons_dict[n] for n in top_5_persons]
 
@@ -89,6 +91,7 @@ def exportInterestingData(pd:osxphotos.PhotosDB, outdir:str):
     movies = list(filter(lambda p: p.ismovie, ps))
     data['num_movies'] = len(movies)
     movies_duration = [m.exif_info.duration if m.exif_info.duration else 0 for m in movies]
+    data['total_movies_size_mbyte'] = sum([m.original_filesize for m in movies]) / 1e6
     data["total_movies_duration_seconds"] = round(sum(movies_duration))
     data["max_movie_duration_seconds"] = round(max(movies_duration))
     
@@ -109,6 +112,13 @@ def exportInterestingData(pd:osxphotos.PhotosDB, outdir:str):
     # Object detection labels
     labels = pd.labels_as_dict
     data['labels'] = list(labels.keys())
+
+    # Break photos down by month
+    ps_dated_by_month = groupByDate(ps, date_format='%m')
+    num_photos_by_month = dict()
+    for month in ps_dated_by_month:
+        num_photos_by_month[month] = len(ps_dated_by_month[month])
+    data['num_photos_by_month'] = num_photos_by_month
 
     # Output
     outfile_path = os.path.join(outdir, 'stats.json')
