@@ -120,6 +120,30 @@ def exportInterestingData(pd:osxphotos.PhotosDB, outdir:str):
         num_photos_by_month[month] = len(ps_dated_by_month[month])
     data['num_photos_by_month'] = num_photos_by_month
 
+    # Break down data per year-month
+    def breakDownAndPopulateData(photos, label):
+        ps_dated_by_year_month = groupByDate(photos, date_format='%Y-%m')
+
+        num_photos_by_year_month = dict()
+        data_size_by_year_month = dict()
+        for year_month in ps_dated_by_year_month:
+            num_photos_by_year_month[year_month] = len(ps_dated_by_year_month[year_month])
+            data_size_by_year_month[year_month] = sum([p.original_filesize for p in ps_dated_by_year_month[year_month]]) / 1e6
+        data[f'monthly_data_{label}_size_mbytes'] = data_size_by_year_month
+        data[f'monthly_data_{label}_avg_size_mbytes'] = sum(data_size_by_year_month.values()) / len(data_size_by_year_month)
+
+    breakDownAndPopulateData(ps, 'total')
+
+    # Add stats for last 12 months
+    # Only get last 12 months (not including current one)
+    # year_months = ps_dated_by_year_month.keys()
+    # last_months_count = min(12, len(year_months))
+    # if datetime.now().strftime("%Y-%m") in ps_dated_by_year_month:
+    #     last_months = sorted(year_months)[max(len(year_months) - last_months_count - 1, 0):-1]
+    # else:
+    #     last_months = sorted(year_months)[len(year_months) - last_months_count:]
+    
+
     # Output
     outfile_path = os.path.join(outdir, 'stats.json')
     with open(outfile_path, 'w') as outfile:

@@ -39,9 +39,16 @@ That's equivalent to <span id="total_size_equiv">0</span>&nbsp;<span id="total_s
 <h3>Top <span class="num_top_persons">5</span> persons are:</h3>
 <ol class="top-persons-list"></ol>
 <h3>The top <span class="num_top_persons">5</span> accounts for <span class="top_persons_percentage">0</span>% of all tagged faces.</h3>
+<hr>
+<h2>On average, <span class="monthly_avg_data_size">0</span>&nbsp;MB of data is created every month.</h2>
+<canvas id="data_size_month_chart" width="400" height="80"></canvas>
+<canvas id="data_size_month_videos_chart" width="400" height="80"></canvas>
+<canvas id="data_size_month_hidden_chart" width="400" height="80"></canvas>
 </div>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.4.0/d3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.js"
+    integrity="sha256-Y26AMvaIfrZ1EQU49pf6H4QzVTrOI8m9wQYKkftBt4s=" crossorigin="anonymous"></script>
+<!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.4.0/d3.min.js"></script> -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
     integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
     crossorigin="anonymous"></script>
@@ -59,6 +66,37 @@ That's equivalent to <span id="total_size_equiv">0</span>&nbsp;<span id="total_s
         var mDisplay = m > 0 ? m + (m == 1 ? " min, " : " mins, ") : "";
         var sDisplay = s > 0 ? s + " s" : "";
         return dDisplay + hDisplay + mDisplay + sDisplay;
+    }
+
+    function makeDataSizeChart(id, months, monthly_data) {
+        const max_months_to_show = 5 * 12;
+        if (months.length > max_months_to_show) {
+            months = months.slice(months.length - max_months_to_show, months.length);
+            monthly_data = monthly_data.slice(monthly_data.length - max_months_to_show, monthly_data.length);
+        }
+        const ctx = document.getElementById(id).getContext('2d');
+        const myChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: months,
+                datasets: [
+                    {
+                        label: 'MB of data per month',
+                        data: monthly_data,
+                        fill: true,
+                        borderColor: 'rgb(0, 0, 0)'
+                    }
+                ]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                },
+                responsive: true,
+            }
+        });
     }
 
     $(document).ready(() => {
@@ -122,6 +160,21 @@ That's equivalent to <span id="total_size_equiv">0</span>&nbsp;<span id="total_s
         }
 
         s('.top_persons_percentage', (sum_tagged / data.num_faces_tagged * 100).toFixed(1));
+
+        // Sort monthly data alphabetically
+        function sortedMonthlyData(unordered) {
+            return Object.keys(unordered).sort().reduce(
+                (obj, key) => {
+                    obj[key] = unordered[key];
+                    return obj;
+                },
+                {}
+            );
+        }
+        
+        const month_data_sizes = sortedMonthlyData(data.monthly_data_total_size_mbytes);
+        makeDataSizeChart('data_size_month_chart', Object.keys(month_data_sizes), Object.values(month_data_sizes));
+        s('.monthly_avg_data_size', data.monthly_data_total_avg_size_mbytes.toFixed(1));
     }
 </script>
 </body>
